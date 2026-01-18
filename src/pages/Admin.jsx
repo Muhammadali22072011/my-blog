@@ -2193,7 +2193,11 @@ function Admin() {
       {/* Security Tab */}
       {activeTab === 'security' && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8">
-          <SecurityDashboard />
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">🛡️ Безопасность</h2>
+            <p className="text-gray-600 dark:text-gray-400">Логи входов и активности пользователей</p>
+          </div>
+          <SecurityAuditLog />
         </div>
       )}
     </div>
