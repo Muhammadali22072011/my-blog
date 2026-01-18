@@ -97,13 +97,15 @@ Thanks for reading! 🚀`,
   // Get excerpt from content
   const getExcerpt = (content, maxLength = 150) => {
     if (!content) return ''
-    // Remove markdown formatting
+    // Remove markdown formatting and HTML tags
     const plainText = content
+      .replace(/<[^>]+>/g, '') // Remove HTML tags
       .replace(/^#+ .*/gm, '') // Remove headers
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
       .replace(/\*(.*?)\*/g, '$1') // Remove italic
       .replace(/`(.*?)`/g, '$1') // Remove code
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '') // Remove images
       .replace(/>\s.*/g, '') // Remove blockquotes
       .replace(/- .*/g, '') // Remove list items
       .replace(/\n+/g, ' ') // Replace newlines with spaces
