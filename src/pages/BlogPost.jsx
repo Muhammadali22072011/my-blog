@@ -289,7 +289,15 @@ function BlogPost() {
     return null
   }
   
-  const ogImage = post.featured_image || post.og_image || getFirstImage(post.content)
+  // Преобразуем featured_image в полный URL если нужно
+  const getFullImageUrl = (imageUrl) => {
+    if (!imageUrl) return null
+    if (imageUrl.startsWith('http')) return imageUrl
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+    return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
+  }
+  
+  const ogImage = getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image) || getFirstImage(post.content)
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -361,10 +369,10 @@ function BlogPost() {
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white leading-tight mb-4">{postTitle}</h1>
             
             {/* Featured Image */}
-            {(post.featured_image || post.og_image) && (
+            {ogImage && (
               <div className="w-full rounded-xl overflow-hidden mb-6">
                 <img 
-                  src={post.featured_image || post.og_image}
+                  src={ogImage}
                   alt={postTitle}
                   className="w-full h-auto object-cover"
                   style={{ maxHeight: '500px' }}

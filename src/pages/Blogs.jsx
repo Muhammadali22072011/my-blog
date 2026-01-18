@@ -115,6 +115,14 @@ Thanks for reading! 🚀`,
     return plainText.substring(0, maxLength).trim() + '...'
   }
 
+  // Преобразуем featured_image в полный URL если нужно
+  const getFullImageUrl = (imageUrl) => {
+    if (!imageUrl) return null
+    if (imageUrl.startsWith('http')) return imageUrl
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+    return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
+  }
+
 
 
   // Filter and validate posts
@@ -385,7 +393,7 @@ Thanks for reading! 🚀`,
                         {(post.featured_image || post.og_image) && (
                           <div className="w-full h-48 overflow-hidden">
                             <img 
-                              src={post.featured_image || post.og_image}
+                              src={getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image)}
                               alt={getPostTitle(post)}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               onError={(e) => e.target.style.display = 'none'}
