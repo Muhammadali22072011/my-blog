@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://muhammadali-blog.vercel.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Allow all important directories
+Allow: /src/
+Allow: /components/
+Allow: /pages/
+Allow: /services/
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /private/

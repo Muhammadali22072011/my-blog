@@ -1,0 +1,14 @@
+# Файлы для игнорирования при деплое на Vercel
+.env.local
+.env.development
+.env
+*.sql
+*.bat
+*.sh
+node_modules
+.git
+*.md
+!README.md
+CHECKLIST.md
+DEPLOYMENT.md
+INSTALLATION.md
