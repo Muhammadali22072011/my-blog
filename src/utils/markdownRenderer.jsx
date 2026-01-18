@@ -26,9 +26,19 @@ export const renderMarkdown = (text, options = {}) => {
   }
 
   // Нормализация строк и удаление дублирующихся пустых строк
-  const lines = text
+  let normalizedText = text
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
+  
+  // Если текст не содержит переносов строк (слитый текст), добавляем их автоматически
+  if (!normalizedText.includes('\n') && normalizedText.length > 100) {
+    // Разбиваем по точкам с пробелом (конец предложения)
+    normalizedText = normalizedText.replace(/\.\s+/g, '.\n\n')
+    // Разбиваем по восклицательным и вопросительным знакам
+    normalizedText = normalizedText.replace(/([!?])\s+/g, '$1\n\n')
+  }
+  
+  const lines = normalizedText
     .split('\n')
     .filter((line, index, arr) => {
       // Убираем дублирующиеся пустые строки
