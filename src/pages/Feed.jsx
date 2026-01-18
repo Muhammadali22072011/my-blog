@@ -145,7 +145,7 @@ function Feed() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <SEOHead title="Лента постов" description="Все посты блога в одной ленте" />
+      <SEOHead title="Лента постов" description="Все посты блога в одной ленте с бесконечной прокруткой" />
       
       {/* Header */}
       <div className="mb-8">
