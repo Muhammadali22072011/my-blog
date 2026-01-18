@@ -20,14 +20,20 @@ function SEOKeywords({
 
     // Добавляем структурированные данные (JSON-LD) для Google
     if (post && type === 'article') {
+      // Безопасное получение значений с проверками
+      const title = post.title || 'Untitled'
+      const description = post.description || post.excerpt || ''
+      const content = post.content || ''
+      const category = post.category || 'blog'
+      
       const structuredData = {
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
-        headline: post.title,
-        description: post.description,
+        headline: title,
+        description: description,
         image: post.image || window.location.origin + '/logo.svg',
-        datePublished: post.publishedTime,
-        dateModified: post.modifiedTime || post.publishedTime,
+        datePublished: post.publishedTime || post.created_at || new Date().toISOString(),
+        dateModified: post.modifiedTime || post.updated_at || post.publishedTime || post.created_at || new Date().toISOString(),
         author: {
           '@type': 'Person',
           name: post.author || 'Muhammadali',
@@ -46,8 +52,8 @@ function SEOKeywords({
           '@id': window.location.href
         },
         keywords: keywords.join(', '),
-        articleSection: post.category,
-        wordCount: post.content ? post.content.split(/\s+/).length : 0
+        articleSection: category,
+        wordCount: content ? content.split(/\s+/).length : 0
       }
 
       // Удаляем старый script если есть

@@ -299,7 +299,11 @@ export const renderMarkdown = (text, options = {}) => {
  * Улучшенная обработка inline Markdown элементов
  */
 export const processInlineMarkdown = (text) => {
-  if (!text || typeof text !== 'string') return text
+  // Безопасная проверка и конвертация в строку
+  if (!text) return ''
+  if (typeof text !== 'string') {
+    text = String(text)
+  }
 
   const elements = []
   let lastIndex = 0
@@ -406,7 +410,11 @@ export const processInlineMarkdown = (text) => {
  * Быстрое преобразование Markdown в HTML (для простых случаев)
  */
 export const markdownToHtml = (markdown) => {
+  // Безопасная проверка
   if (!markdown) return ''
+  if (typeof markdown !== 'string') {
+    markdown = String(markdown)
+  }
   
   return markdown
     // Заголовки
