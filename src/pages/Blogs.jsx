@@ -96,7 +96,7 @@ Thanks for reading! 🚀`,
 
   // Get excerpt from content
   const getExcerpt = (content, maxLength = 150) => {
-    if (!content) return ''
+    if (!content) return 'Read this blog post'
     // Remove markdown formatting and HTML tags
     const plainText = content
       .replace(/<[^>]+>/g, '') // Remove HTML tags
@@ -110,6 +110,19 @@ Thanks for reading! 🚀`,
       .replace(/- .*/g, '') // Remove list items
       .replace(/\n+/g, ' ') // Replace newlines with spaces
       .trim()
+    
+    // Если после удаления заголовков ничего не осталось, используем заголовок
+    if (!plainText || plainText.length < 10) {
+      const lines = content.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('# ')) {
+          const title = trimmed.substring(2)
+          return title.length > maxLength ? title.substring(0, maxLength) + '...' : title
+        }
+      }
+      return 'Read this blog post'
+    }
     
     if (plainText.length <= maxLength) return plainText
     return plainText.substring(0, maxLength).trim() + '...'

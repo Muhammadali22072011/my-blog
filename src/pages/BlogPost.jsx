@@ -187,7 +187,7 @@ function BlogPost() {
   }
 
   const getExcerpt = (content, maxLength = 160) => {
-    if (!content) return ''
+    if (!content) return 'Read this blog post on Muhammadali Blog'
     const plainText = content
       .replace(/^#+ .*/gm, '')
       .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -198,6 +198,19 @@ function BlogPost() {
       .replace(/- .*/g, '')
       .replace(/\n+/g, ' ')
       .trim()
+    
+    // Если после удаления заголовков ничего не осталось, используем заголовок
+    if (!plainText || plainText.length < 10) {
+      const lines = content.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('# ')) {
+          return trimmed.substring(2) + ' - Read more on Muhammadali Blog'
+        }
+      }
+      return 'Read this blog post on Muhammadali Blog'
+    }
+    
     return plainText.length <= maxLength ? plainText : plainText.substring(0, maxLength).trim() + '...'
   }
 
