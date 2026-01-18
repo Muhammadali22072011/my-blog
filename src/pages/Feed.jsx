@@ -1,6 +1,10 @@
 import { useData } from '../context/DataContext'
 import { Link } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import SEOHead from '../components/SEOHead'
 
 function Feed() {
@@ -46,12 +50,9 @@ function Feed() {
     return post.excerpt || 'Untitled Post'
   }
 
-  // Get content preview (first few paragraphs)
-  const getContentPreview = (content) => {
+  // Get full content without title
+  const getContentWithoutTitle = (content) => {
     if (!content) return ''
-    
-    // Remove title (first # heading)
-    let contentWithoutTitle = content
     const lines = content.split('\n')
     let foundTitle = false
     const filteredLines = []
@@ -64,33 +65,7 @@ function Feed() {
       filteredLines.push(line)
     }
     
-    contentWithoutTitle = filteredLines.join('\n')
-    
-    // Get first 500 characters of content
-    const plainText = contentWithoutTitle
-      .replace(/<[^>]+>/g, '')
-      .replace(/^#{2,6} /gm, '') // Remove other headers but keep text
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/`(.*?)`/g, '$1')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
-      .trim()
-    
-    if (plainText.length <= 500) return plainText
-    
-    // Cut at last sentence within 500 chars
-    const preview = plainText.substring(0, 500)
-    const lastPeriod = preview.lastIndexOf('.')
-    const lastQuestion = preview.lastIndexOf('?')
-    const lastExclamation = preview.lastIndexOf('!')
-    const lastSentence = Math.max(lastPeriod, lastQuestion, lastExclamation)
-    
-    if (lastSentence > 200) {
-      return preview.substring(0, lastSentence + 1)
-    }
-    
-    return preview + '...'
+    return filteredLines.join('\n')
   }
 
   // Get reading time
@@ -248,21 +223,56 @@ function Feed() {
                 </Link>
               )}
               
-              {/* Content preview */}
-              <div className="text-gray-700 dark:text-gray-300 text-base leading-relaxed mb-4 whitespace-pre-line">
-                {getContentPreview(post.content)}
+              {/* Full content with markdown */}
+              <div className="prose prose-lg dark:prose-invert max-w-none mb-6">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({ node, inline, className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || '')
+                      return !inline && match ? (
+                        <SyntaxHighlighter
+                          style={vscDarkPlus}
+                          language={match[1]}
+                          PreTag="div"
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      )
+                    },
+                    img({ src, alt }) {
+                      return (
+                        <img 
+                          src={getFullImageUrl(src)} 
+                          alt={alt || ''} 
+                          className="rounded-lg w-full"
+                          loading="lazy"
+                        />
+                      )
+                    }
+                  }}
+                >
+                  {getContentWithoutTitle(post.content)}
+                </ReactMarkdown>
               </div>
               
-              {/* Read more link */}
-              <Link 
-                to={`/post/${post.id}`}
-                className="inline-flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium hover:translate-x-2 transition-transform"
-              >
-                Читать далее
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
+              {/* Post footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Link 
+                  to={`/post/${post.id}`}
+                  className="inline-flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium hover:translate-x-2 transition-transform"
+                >
+                  Комментарии и реакции
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
             </div>
           </article>
         ))}
