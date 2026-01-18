@@ -1,4 +1,4 @@
-import { supabase } from './SupabaseService'
+import { supabase } from '../config/supabase'
 
 // Получение информации о браузере и устройстве
 const getBrowserInfo = () => {

@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -15,8 +16,34 @@ import NotFound from './components/NotFound'
 import { AuthProvider } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { logPageView } from './services/SecurityLogger'
 
+function AppContent() {
+  const location = useLocation()
 
+  // Логируем просмотр страницы при каждом изменении URL
+  useEffect(() => {
+    logPageView()
+  }, [location])
+
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="blogs" element={<Blogs />} />
+        <Route path="feed" element={<Feed />} />
+        <Route path="post/:id" element={<BlogPost />} />
+        <Route path="search" element={<Search />} />
+        <Route path="news" element={<News />} />
+        <Route path="about" element={<AboutMe />} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="media" element={<MediaManager />} />
+        <Route path="admin" element={<ProtectedAdmin />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  )
+}
 
 function App() {
   return (
@@ -47,21 +74,7 @@ function App() {
               },
             }}
           />
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path="blogs" element={<Blogs />} />
-              <Route path="feed" element={<Feed />} />
-              <Route path="post/:id" element={<BlogPost />} />
-              <Route path="search" element={<Search />} />
-              <Route path="news" element={<News />} />
-              <Route path="about" element={<AboutMe />} />
-              <Route path="projects" element={<Projects />} />
-              <Route path="media" element={<MediaManager />} />
-              <Route path="admin" element={<ProtectedAdmin />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+          <AppContent />
         </DataProvider>
       </AuthProvider>
     </ThemeProvider>
