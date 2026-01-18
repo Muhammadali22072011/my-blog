@@ -7,6 +7,8 @@ import Blogs from './pages/Blogs'
 import BlogPost from './pages/BlogPost'
 import Feed from './pages/Feed'
 import Search from './pages/Search'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import ProtectedAdmin from './components/ProtectedAdmin'
 import News from './pages/News'
 import AboutMe from './pages/AboutMe'
@@ -41,6 +43,9 @@ function AppContent() {
         <Route path="admin" element={<ProtectedAdmin />} />
         <Route path="*" element={<NotFound />} />
       </Route>
+      {/* Страницы без Layout (полноэкранные) */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
     </Routes>
   )
 }
