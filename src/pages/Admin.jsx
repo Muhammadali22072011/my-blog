@@ -108,6 +108,7 @@ function Admin() {
   })
 
   const [isPreview, setIsPreview] = useState(false)
+  const [isEditPreview, setIsEditPreview] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -1966,7 +1967,7 @@ function Admin() {
       {/* Edit post modal */}
       {showEditModal && editingPost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t.editPost || 'Edit Post'}</h3>
@@ -1974,6 +1975,7 @@ function Admin() {
                   onClick={() => {
                     setShowEditModal(false)
                     setEditingPost(null)
+                    setIsEditPreview(false)
                   }}
                   className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
@@ -1992,28 +1994,86 @@ function Admin() {
                     value={editingPost.excerpt || ''}
                     onChange={handleEditChange}
                     rows="3"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
 
+                {/* Featured Image */}
                 <div>
-                  <label htmlFor="edit-content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="edit-featured-image" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    🖼️ Featured Image (Preview Image)
+                  </label>
+                  <input
+                    type="text"
+                    id="edit-featured-image"
+                    name="featured_image"
+                    value={editingPost.featured_image || ''}
+                    onChange={handleEditChange}
+                    placeholder="https://... or paste image URL from Media Gallery"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    💡 Tip: Go to Media tab → Upload image → Copy URL → Paste here
+                  </p>
+                  {editingPost.featured_image && (
+                    <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <img 
+                        src={editingPost.featured_image} 
+                        alt="Featured preview" 
+                        className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'block'
+                        }}
+                      />
+                      <div style={{ display: 'none' }} className="p-4 bg-gray-50 dark:bg-gray-900 text-center text-gray-500">
+                        ⚠️ Image failed to load
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Preview Toggle */}
+                <div className="flex items-center justify-between">
+                  <label htmlFor="edit-content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t.postContent || 'Content'}
                   </label>
-                  <textarea
-                    id="edit-content"
-                    name="content"
-                    value={editingPost.content || ''}
-                    onChange={handleEditChange}
-                    rows="10"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsEditPreview(!isEditPreview)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
+                  >
+                    👁️ {isEditPreview ? t.edit : t.preview}
+                  </button>
                 </div>
+
+                {/* Editor/Preview */}
+                {isEditPreview ? (
+                  /* Preview */
+                  <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+                    {editingPost.content ? (
+                      <div className="prose prose-lg max-w-none">
+                        <div dangerouslySetInnerHTML={{
+                          __html: processMarkdown(editingPost.content)
+                        }} />
+                      </div>
+                    ) : (
+                      <p className="text-gray-400">{t.noContentToPreview}</p>
+                    )}
+                  </div>
+                ) : (
+                  /* Markdown Editor */
+                  <AdminMCEditor
+                    value={editingPost.content || ''}
+                    onChange={(value) => setEditingPost({ ...editingPost, content: value })}
+                    placeholder={t.enhancedMarkdownPlaceholderText}
+                    className="w-full"
+                  />
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t.postCategory || 'Category'}
                     </label>
                     <select
@@ -2029,7 +2089,7 @@ function Admin() {
                   </div>
 
                   <div>
-                    <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t.postStatus || 'Status'}
                     </label>
                     <select
@@ -2077,6 +2137,7 @@ function Admin() {
                     onClick={() => {
                       setShowEditModal(false)
                       setEditingPost(null)
+                      setIsEditPreview(false)
                     }}
                     className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
