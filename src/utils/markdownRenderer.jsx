@@ -223,8 +223,12 @@ export const renderMarkdown = (text, options = {}) => {
             <img
               src={fullUrl}
               alt={alt || 'Изображение'}
-              className="w-full h-auto rounded-lg shadow-lg"
-              loading="lazy"
+              style={{ 
+                width: '100%', 
+                height: 'auto',
+                display: 'block',
+                maxWidth: '100%'
+              }}
               onError={(e) => {
                 console.error('❌ [renderMarkdown] Ошибка загрузки изображения:', fullUrl)
                 e.target.style.display = 'none'
@@ -296,8 +300,12 @@ export const renderMarkdown = (text, options = {}) => {
               <img
                 src={fullSrc}
                 alt={alt}
-                className="w-full h-auto rounded-lg shadow-lg"
-                loading="lazy"
+                style={{ 
+                  width: '100%', 
+                  height: 'auto',
+                  display: 'block',
+                  maxWidth: '100%'
+                }}
                 onError={(e) => {
                   console.error('❌ [renderMarkdown] Ошибка загрузки HTML изображения:', fullSrc)
                   e.target.style.display = 'none'
