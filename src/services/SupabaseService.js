@@ -1024,6 +1024,165 @@ class SupabaseService {
       return false
     }
   }
+
+  // ==================== MEDIA FUNCTIONS ====================
+
+  // Получить список изображений из storage
+  async getImages() {
+    try {
+      const { data, error } = await supabase
+        .storage
+        .from('images')
+        .list('blog-images', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        })
+
+      if (error) throw error
+
+      // Формируем полные URL для изображений
+      const images = data.map(file => ({
+        name: file.name,
+        path: `blog-images/${file.name}`,
+        url: `${supabase.storage.from('images').getPublicUrl(`blog-images/${file.name}`).data.publicUrl}`,
+        size: file.metadata?.size || 0,
+        type: file.metadata?.mimetype || 'image/*',
+        created_at: file.created_at
+      }))
+
+      console.log('Image loaded successfully:', images[0]?.url)
+      return images
+    } catch (error) {
+      console.error('Ошибка загрузки изображений:', error)
+      throw error
+    }
+  }
+
+  // Получить список видео из storage
+  async getVideos() {
+    try {
+      const { data, error } = await supabase
+        .storage
+        .from('videos')
+        .list('blog-videos', {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        })
+
+      if (error) throw error
+
+      // Формируем полные URL для видео
+      const videos = data.map(file => ({
+        name: file.name,
+        path: `blog-videos/${file.name}`,
+        url: `${supabase.storage.from('videos').getPublicUrl(`blog-videos/${file.name}`).data.publicUrl}`,
+        size: file.metadata?.size || 0,
+        type: file.metadata?.mimetype || 'video/*',
+        created_at: file.created_at
+      }))
+
+      return videos
+    } catch (error) {
+      console.error('Ошибка загрузки видео:', error)
+      throw error
+    }
+  }
+
+  // Загрузить изображение
+  async uploadImage(file) {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `blog-images/${fileName}`
+
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath)
+
+      return {
+        path: filePath,
+        url: publicUrl,
+        name: fileName,
+        fullUrl: publicUrl
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки изображения:', error)
+      throw error
+    }
+  }
+
+  // Загрузить видео
+  async uploadVideo(file) {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `blog-videos/${fileName}`
+
+      const { data, error } = await supabase.storage
+        .from('videos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath)
+
+      return {
+        path: filePath,
+        url: publicUrl,
+        name: fileName,
+        fullUrl: publicUrl
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки видео:', error)
+      throw error
+    }
+  }
+
+  // Удалить изображение
+  async deleteImage(path) {
+    try {
+      const { error } = await supabase.storage
+        .from('images')
+        .remove([path])
+
+      if (error) throw error
+      return true
+    } catch (error) {
+      console.error('Ошибка удаления изображения:', error)
+      throw error
+    }
+  }
+
+  // Удалить видео
+  async deleteVideo(path) {
+    try {
+      const { error } = await supabase.storage
+        .from('videos')
+        .remove([path])
+
+      if (error) throw error
+      return true
+    } catch (error) {
+      console.error('Ошибка удаления видео:', error)
+      throw error
+    }
+  }
 }
 
 // Создаем единственный экземпляр сервиса
