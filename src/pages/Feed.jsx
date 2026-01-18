@@ -1,264 +1,287 @@
 import { useData } from '../context/DataContext'
-import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { renderMarkdown } from '../utils/markdownRenderer.jsx'
+import { useState, useEffect, useRef } from 'react'
+import SEOHead from '../components/SEOHead'
 
 function Feed() {
-  const { posts, loading, error } = useData()
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const containerRef = useRef(null)
+  const { posts, loading } = useData()
+  const [displayedCount, setDisplayedCount] = useState(10)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const loaderRef = useRef(null)
+  const postsPerLoad = 10
 
-  // Get published posts sorted by date
-  const publishedPosts = posts
-    .filter(post => post.status === 'published' && post.content)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  // Get published posts
+  const publishedPosts = posts.filter(post => post.status === 'published')
+  
+  // Get unique categories
+  const categories = ['all', ...new Set(publishedPosts.map(post => post.category).filter(Boolean))]
 
-  const currentPost = publishedPosts[currentIndex]
-  const hasNext = currentIndex < publishedPosts.length - 1
-  const hasPrev = currentIndex > 0
+  // Filter by category
+  const filteredPosts = selectedCategory === 'all' 
+    ? publishedPosts 
+    : publishedPosts.filter(post => post.category === selectedCategory)
 
-  // Navigate to next/previous post
-  const goToNext = useCallback(() => {
-    if (hasNext && !isTransitioning) {
-      setIsTransitioning(true)
-      setTimeout(() => {
-        setCurrentIndex(prev => prev + 1)
-        setIsTransitioning(false)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }, 300)
-    }
-  }, [hasNext, isTransitioning])
-
-  const goToPrev = useCallback(() => {
-    if (hasPrev && !isTransitioning) {
-      setIsTransitioning(true)
-      setTimeout(() => {
-        setCurrentIndex(prev => prev - 1)
-        setIsTransitioning(false)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }, 300)
-    }
-  }, [hasPrev, isTransitioning])
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        goToNext()
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        goToPrev()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [goToNext, goToPrev])
+  // Sort by date
+  const sortedPosts = [...filteredPosts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  
+  // Display limited posts
+  const displayedPosts = sortedPosts.slice(0, displayedCount)
+  const hasMore = displayedCount < sortedPosts.length
 
   // Get post title
   const getPostTitle = (post) => {
-    if (!post?.content) return 'Untitled'
-    const lines = post.content.split('\n')
-    for (const line of lines) {
-      if (line.trim().startsWith('# ')) {
-        return line.trim().substring(2)
+    if (post.content) {
+      const lines = post.content.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('# ')) {
+          const title = trimmed.substring(2)
+          if (title.length > 0) {
+            return title.length > 100 ? title.substring(0, 100) + '...' : title
+          }
+        }
       }
     }
-    return post.excerpt || 'Untitled'
+    return post.excerpt || 'Untitled Post'
   }
 
-  // Get content without title
-  const getContentWithoutTitle = (content) => {
-    if (!content) return ''
-    const lines = content.split('\n')
-    let foundTitle = false
-    const filtered = []
-    for (const line of lines) {
-      if (line.trim().startsWith('# ') && !foundTitle) {
-        foundTitle = true
-        continue
+  // Get excerpt
+  const getExcerpt = (content, maxLength = 200) => {
+    if (!content) return 'Read this blog post'
+    const plainText = content
+      .replace(/<[^>]+>/g, '')
+      .replace(/^#+ .*/gm, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`(.*?)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
+      .replace(/>\s.*/g, '')
+      .replace(/- .*/g, '')
+      .replace(/\n+/g, ' ')
+      .trim()
+    
+    if (!plainText || plainText.length < 10) {
+      const lines = content.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('# ')) {
+          const title = trimmed.substring(2)
+          return title.length > maxLength ? title.substring(0, maxLength) + '...' : title
+        }
       }
-      filtered.push(line)
+      return 'Read this blog post'
     }
-    return filtered.join('\n')
+    
+    if (plainText.length <= maxLength) return plainText
+    return plainText.substring(0, maxLength).trim() + '...'
   }
 
-  // Calculate reading time
+  // Get reading time
   const getReadingTime = (content) => {
     if (!content) return 1
+    const wordsPerMinute = 200
     const words = content.trim().split(/\s+/).length
-    return Math.max(1, Math.ceil(words / 200))
+    const time = Math.ceil(words / wordsPerMinute)
+    return time < 1 ? 1 : time
   }
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return ''
+    if (!dateString) return 'No Date'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
+    if (isNaN(date.getTime())) return 'Invalid Date'
+    return date.toLocaleDateString('ru-RU', {
+      day: 'numeric',
       month: 'long',
-      day: 'numeric'
+      year: 'numeric'
     })
   }
 
+  // Get full image URL
+  const getFullImageUrl = (imageUrl) => {
+    if (!imageUrl) return null
+    if (imageUrl.startsWith('http')) return imageUrl
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+    return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
+  }
+
+  // Reset count when category changes
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category)
+    setDisplayedCount(postsPerLoad)
+  }
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0]
+        if (first.isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true)
+          setTimeout(() => {
+            setDisplayedCount(prev => prev + postsPerLoad)
+            setIsLoadingMore(false)
+          }, 300)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentLoader = loaderRef.current
+    if (currentLoader) {
+      observer.observe(currentLoader)
+    }
+
+    return () => {
+      if (currentLoader) {
+        observer.unobserve(currentLoader)
+      }
+    }
+  }, [hasMore, isLoadingMore])
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading feed...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error</h2>
-          <p className="text-gray-600 dark:text-gray-400">{error}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (publishedPosts.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">📭</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No posts yet</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">The feed is empty</p>
-          <Link to="/blogs" className="text-blue-600 hover:text-blue-700">
-            Go to Blogs →
-          </Link>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-gray-200 dark:bg-gray-800 h-48 rounded-lg"></div>
+          ))}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" ref={containerRef}>
-      {/* Progress indicator */}
-      <div className="fixed top-16 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {currentIndex + 1} / {publishedPosts.length}
-          </span>
-          <div className="flex-1 mx-4 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-600 transition-all duration-300"
-              style={{ width: `${((currentIndex + 1) / publishedPosts.length) * 100}%` }}
-            />
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Use</span>
-            <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">←</kbd>
-            <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-xs">→</kbd>
-          </div>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <SEOHead title="Лента постов" description="Все посты блога в одной ленте" />
+      
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">Лента</h1>
+        
+        {/* Category filters */}
+        <div className="flex flex-wrap gap-2">
+          {categories.map(category => (
+            <button
+              key={category}
+              onClick={() => handleCategoryChange(category)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                selectedCategory === category
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              {category === 'all' ? 'Все подряд' : category.charAt(0).toUpperCase() + category.slice(1)}
+            </button>
+          ))}
         </div>
+        
+        {/* Results count */}
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+          Показано {displayedPosts.length} из {sortedPosts.length} постов
+        </p>
       </div>
 
-      {/* Main content */}
-      <div className={`max-w-4xl mx-auto px-4 pt-28 pb-32 transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-        {currentPost && (
-          <>
-            {/* Post header */}
-            <header className="mb-8">
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white mb-4">
-                {getPostTitle(currentPost)}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                <span>{formatDate(currentPost.created_at)}</span>
-                <span>•</span>
-                <span>{getReadingTime(currentPost.content)} min read</span>
-                {currentPost.category && (
-                  <>
-                    <span>•</span>
-                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full capitalize">
-                      {currentPost.category}
-                    </span>
-                  </>
+      {/* Posts feed */}
+      <div className="space-y-6">
+        {displayedPosts.map(post => (
+          <article 
+            key={post.id} 
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group"
+          >
+            <Link to={`/post/${post.id}`}>
+              <div className="p-6">
+                {/* Meta info */}
+                <div className="flex items-center gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span>{formatDate(post.created_at)}</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {getReadingTime(post.content)} мин
+                  </span>
+                  {post.category && (
+                    <>
+                      <span>•</span>
+                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full capitalize">
+                        {post.category}
+                      </span>
+                    </>
+                  )}
+                </div>
+                
+                {/* Title */}
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {getPostTitle(post)}
+                </h2>
+                
+                {/* Excerpt */}
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
+                  {getExcerpt(post.content)}
+                </p>
+                
+                {/* Featured image */}
+                {(post.featured_image || post.og_image) && (
+                  <div className="mt-4 rounded-lg overflow-hidden">
+                    <img 
+                      src={getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image)}
+                      alt={getPostTitle(post)}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => e.target.parentElement.style.display = 'none'}
+                    />
+                  </div>
                 )}
-                <Link 
-                  to={`/post/${currentPost.id}`}
-                  className="ml-auto text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Open full page →
-                </Link>
+                
+                {/* Read more */}
+                <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium mt-4 group-hover:translate-x-2 transition-transform">
+                  Читать далее
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               </div>
-            </header>
-
-            {/* Post content */}
-            <article className="prose prose-lg dark:prose-invert max-w-none">
-              <div className="text-gray-800 dark:text-gray-200 leading-relaxed bg-white dark:bg-gray-800 rounded-xl p-6 sm:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-                {renderMarkdown(getContentWithoutTitle(currentPost.content), { emptyText: 'No content' })}
-              </div>
-            </article>
-          </>
-        )}
+            </Link>
+          </article>
+        ))}
       </div>
 
-      {/* Navigation buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
-            {/* Previous button */}
-            <button
-              onClick={goToPrev}
-              disabled={!hasPrev || isTransitioning}
-              className={`flex-1 flex items-center gap-3 p-4 rounded-xl transition-all ${
-                hasPrev 
-                  ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer' 
-                  : 'bg-gray-50 dark:bg-gray-800/50 opacity-50 cursor-not-allowed'
-              }`}
-            >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <div className="text-left flex-1 min-w-0">
-                <div className="text-xs text-gray-500 dark:text-gray-400">Previous</div>
-                <div className="text-sm font-medium text-gray-800 dark:text-white truncate">
-                  {hasPrev ? getPostTitle(publishedPosts[currentIndex - 1]) : 'No more posts'}
-                </div>
-              </div>
-            </button>
-
-            {/* Counter */}
-            <div className="flex flex-col items-center px-4">
-              <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                {currentIndex + 1}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                of {publishedPosts.length}
-              </div>
-            </div>
-
-            {/* Next button */}
-            <button
-              onClick={goToNext}
-              disabled={!hasNext || isTransitioning}
-              className={`flex-1 flex items-center gap-3 p-4 rounded-xl transition-all ${
-                hasNext 
-                  ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer' 
-                  : 'bg-gray-50 dark:bg-gray-800/50 opacity-50 cursor-not-allowed'
-              }`}
-            >
-              <div className="text-right flex-1 min-w-0">
-                <div className={`text-xs ${hasNext ? 'text-blue-200' : 'text-gray-500 dark:text-gray-400'}`}>Next</div>
-                <div className={`text-sm font-medium truncate ${hasNext ? 'text-white' : 'text-gray-800 dark:text-white'}`}>
-                  {hasNext ? getPostTitle(publishedPosts[currentIndex + 1]) : 'End of feed'}
-                </div>
-              </div>
-              <svg className={`w-5 h-5 ${hasNext ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+      {/* Infinite scroll loader */}
+      {hasMore && (
+        <div ref={loaderRef} className="flex justify-center py-8">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-sm">Загрузка постов...</span>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* End of posts */}
+      {!hasMore && displayedPosts.length > 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            🎉 Вы просмотрели все посты
+          </p>
+        </div>
+      )}
+
+      {/* No posts */}
+      {displayedPosts.length === 0 && (
+        <div className="text-center py-16">
+          <div className="text-6xl mb-4">📝</div>
+          <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">
+            Постов пока нет
+          </h3>
+          <p className="text-gray-500 dark:text-gray-500">
+            Скоро здесь появятся интересные статьи
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -15,6 +15,7 @@ function Navbar() {
   const navItems = [
     { path: '/news', label: t.news },
     { path: '/blogs', label: t.blogs },
+    { path: '/feed', label: '📰 Лента' },
     { path: '/search', label: '🔍 Search' },
     { path: '/projects', label: 'Projects' },
     { path: '/about', label: t.aboutMeBtn }

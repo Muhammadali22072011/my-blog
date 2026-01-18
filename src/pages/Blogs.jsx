@@ -1,6 +1,6 @@
 import { useData } from '../context/DataContext'
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import supabaseService from '../services/SupabaseService'
 import { BlogListSkeleton } from '../components/Skeleton'
 import Newsletter from '../components/Newsletter'
@@ -17,8 +17,10 @@ function Blogs() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [isAddingPost, setIsAddingPost] = useState(false)
   const [viewMode, setViewMode] = useState('feed') // 'feed' or 'list'
-  const [currentPage, setCurrentPage] = useState(1)
-  const postsPerPage = 5
+  const [displayedCount, setDisplayedCount] = useState(10) // Количество отображаемых постов
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const loaderRef = useRef(null)
+  const postsPerLoad = 10 // Загружать по 10 постов за раз
 
   // Function to add test post
   const handleAddTestPost = async () => {
@@ -200,21 +202,52 @@ Thanks for reading! 🚀`,
   const groupedPosts = groupPostsByDate(validPosts)
   const sortedYears = Object.keys(groupedPosts).sort((a, b) => b - a)
 
-  // Pagination for feed view
+  // Infinite scroll для feed view
   const sortedPosts = [...validPosts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  const totalPages = Math.ceil(sortedPosts.length / postsPerPage)
-  const paginatedPosts = sortedPosts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage)
+  const displayedPosts = sortedPosts.slice(0, displayedCount)
+  const hasMore = displayedCount < sortedPosts.length
 
-  // Reset page when filters change
+  // Reset count when filters change
   const handleSearchChange = (value) => {
     setSearchQuery(value)
-    setCurrentPage(1)
+    setDisplayedCount(postsPerLoad)
   }
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category)
-    setCurrentPage(1)
+    setDisplayedCount(postsPerLoad)
   }
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (viewMode !== 'feed') return
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0]
+        if (first.isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true)
+          // Имитация загрузки для плавности
+          setTimeout(() => {
+            setDisplayedCount(prev => prev + postsPerLoad)
+            setIsLoadingMore(false)
+          }, 300)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentLoader = loaderRef.current
+    if (currentLoader) {
+      observer.observe(currentLoader)
+    }
+
+    return () => {
+      if (currentLoader) {
+        observer.unobserve(currentLoader)
+      }
+    }
+  }, [hasMore, isLoadingMore, viewMode])
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No Date'
@@ -393,10 +426,10 @@ Thanks for reading! 🚀`,
         <div className="flex-1 order-2 lg:order-1">
           {validPosts.length > 0 ? (
             <>
-              {/* Feed View - Cards with pagination */}
+              {/* Feed View - Cards with infinite scroll */}
               {viewMode === 'feed' && (
                 <div className="space-y-6">
-                  {paginatedPosts.map(post => (
+                  {displayedPosts.map(post => (
                     <article 
                       key={post.id} 
                       className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group"
@@ -456,42 +489,25 @@ Thanks for reading! 🚀`,
                     </article>
                   ))}
                   
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 pt-8">
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  {/* Infinite scroll loader */}
+                  {hasMore && (
+                    <div ref={loaderRef} className="flex justify-center py-8">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                      </button>
-                      
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                            currentPage === page
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                        <span className="text-sm">Загрузка постов...</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* End of posts message */}
+                  {!hasMore && displayedPosts.length > 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        🎉 Вы просмотрели все посты ({sortedPosts.length})
+                      </p>
                     </div>
                   )}
                 </div>
