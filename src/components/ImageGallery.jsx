@@ -145,15 +145,19 @@ function ImageGallery({ onImageSelect, className = '' }) {
                 loading="lazy"
                 onLoad={() => console.log('✅ [ImageGallery] Изображение загружено:', image.name)}
                 onError={(e) => {
-                  console.error('❌ [ImageGallery] Ошибка загрузки изображения:', {
+                  const errorDetails = {
                     name: image.name,
                     url: image.url,
                     path: image.path,
+                    size: image.size,
+                    type: image.type,
                     errorType: e.type,
-                    errorTarget: e.target.src,
-                    errorMessage: e.target.error || 'Unknown error'
-                  })
-                  console.error('🔗 [ImageGallery] Попробуй открыть URL в браузере:', image.url)
+                    errorTarget: e.target.src
+                  }
+                  console.error('❌ [ImageGallery] Ошибка загрузки изображения:', errorDetails)
+                  console.error(`🔴 ПРОБЛЕМНОЕ ИЗОБРАЖЕНИЕ: ${image.name}`)
+                  console.error(`🔗 URL: ${image.url}`)
+                  console.error('💡 Попробуй открыть этот URL в браузере чтобы увидеть ошибку')
                 }}
               />
             
