@@ -2105,33 +2105,7 @@ function Admin() {
                   </div>
                 </div>
 
-                {/* OG Image Preview */}
-                <OGImagePreview 
-                  title={(() => {
-                    if (editingPost.content) {
-                      const lines = editingPost.content.split('\n')
-                      for (const line of lines) {
-                        const trimmed = line.trim()
-                        if (trimmed.startsWith('# ')) {
-                          return trimmed.substring(2)
-                        }
-                      }
-                    }
-                    return editingPost.excerpt || 'Untitled Post'
-                  })()}
-                  category={editingPost.category || 'blog'}
-                  postId={editingPost.id}
-                />
-
-                {/* SEO Analyzer */}
-                <SEOAnalyzer 
-                  post={editingPost}
-                  onKeywordsUpdate={(keywords) => {
-                    console.log('Extracted keywords:', keywords)
-                  }}
-                />
-
-                <div className="flex justify-end space-x-4 pt-6">
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={() => {
