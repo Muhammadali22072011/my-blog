@@ -31,16 +31,55 @@ const getBrowserInfo = () => {
 // Получение IP адреса и геолокации
 const getLocationInfo = async () => {
   try {
-    // Используем бесплатный API для получения IP и геолокации
-    const response = await fetch('https://ipapi.co/json/')
-    const data = await response.json()
+    // Пробуем несколько API для получения более точных данных
     
+    // Вариант 1: ipapi.co (основной)
+    try {
+      const response = await fetch('https://ipapi.co/json/')
+      const data = await response.json()
+      
+      console.log('🌍 Геолокация от ipapi.co:', data)
+      
+      if (data.ip) {
+        return {
+          ip_address: data.ip,
+          country: data.country_name,
+          city: data.city,
+          latitude: data.latitude,
+          longitude: data.longitude
+        }
+      }
+    } catch (err) {
+      console.warn('ipapi.co failed, trying alternative...', err)
+    }
+    
+    // Вариант 2: ip-api.com (запасной)
+    try {
+      const response = await fetch('http://ip-api.com/json/')
+      const data = await response.json()
+      
+      console.log('🌍 Геолокация от ip-api.com:', data)
+      
+      if (data.status === 'success') {
+        return {
+          ip_address: data.query,
+          country: data.country,
+          city: data.city,
+          latitude: data.lat,
+          longitude: data.lon
+        }
+      }
+    } catch (err) {
+      console.warn('ip-api.com failed', err)
+    }
+    
+    // Если все API не сработали
     return {
-      ip_address: data.ip,
-      country: data.country_name,
-      city: data.city,
-      latitude: data.latitude,
-      longitude: data.longitude
+      ip_address: null,
+      country: null,
+      city: null,
+      latitude: null,
+      longitude: null
     }
   } catch (error) {
     console.error('Error getting location:', error)
