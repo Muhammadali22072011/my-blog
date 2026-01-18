@@ -1,11 +1,9 @@
 import { useData } from '../context/DataContext'
 import { Link } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { renderMarkdown } from '../utils/markdownRenderer.jsx'
 import SEOHead from '../components/SEOHead'
+import '../styles/feed.css'
 
 function Feed() {
   const { posts, loading } = useData()
@@ -21,26 +19,26 @@ function Feed() {
     
     return text
       // Headers
-      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-3">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-8 mb-4">$1</h1>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2 text-gray-800 dark:text-white">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-3 text-gray-800 dark:text-white">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-8 mb-4 text-gray-800 dark:text-white">$1</h1>')
       // Bold
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-      .replace(/__(.*?)__/g, '<strong class="font-bold">$1</strong>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
+      .replace(/__(.*?)__/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
       // Italic
-      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-      .replace(/_(.*?)_/g, '<em class="italic">$1</em>')
+      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>')
+      .replace(/_(.*?)_/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>')
       // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener">$1</a>')
       // Code blocks
-      .replace(/```([^`]+)```/g, '<pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto my-4"><code>$1</code></pre>')
+      .replace(/```([^`]+)```/g, '<pre class="bg-gray-900 dark:bg-gray-950 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 font-mono text-sm"><code>$1</code></pre>')
       // Inline code
-      .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm">$1</code>')
+      .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-800 text-red-600 dark:text-red-400 px-2 py-1 rounded text-sm font-mono">$1</code>')
       // Lists
-      .replace(/^\* (.*$)/gim, '<li class="ml-4">• $1</li>')
-      .replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>')
-      // Line breaks
-      .replace(/\n\n/g, '</p><p class="mb-4">')
+      .replace(/^\* (.*$)/gim, '<li class="ml-6 mb-2 text-gray-700 dark:text-gray-300">• $1</li>')
+      .replace(/^- (.*$)/gim, '<li class="ml-6 mb-2 text-gray-700 dark:text-gray-300">• $1</li>')
+      // Paragraphs
+      .replace(/\n\n/g, '</p><p class="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">')
       .replace(/\n/g, '<br/>')
   }
 
@@ -254,49 +252,12 @@ function Feed() {
               
               {/* Full content with markdown */}
               <div className="prose prose-lg dark:prose-invert max-w-none mb-6">
-                {typeof ReactMarkdown !== 'undefined' ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      code({ node, inline, className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || '')
-                        return !inline && match ? (
-                          <SyntaxHighlighter
-                            style={vscDarkPlus}
-                            language={match[1]}
-                            PreTag="div"
-                            {...props}
-                          >
-                            {String(children).replace(/\n$/, '')}
-                          </SyntaxHighlighter>
-                        ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        )
-                      },
-                      img({ src, alt }) {
-                        return (
-                          <img 
-                            src={getFullImageUrl(src)} 
-                            alt={alt || ''} 
-                            className="rounded-lg w-full"
-                            loading="lazy"
-                          />
-                        )
-                      }
-                    }}
-                  >
-                    {getContentWithoutTitle(post.content)}
-                  </ReactMarkdown>
-                ) : (
-                  <div 
-                    className="formatted-content"
-                    dangerouslySetInnerHTML={{ 
-                      __html: '<p class="mb-4">' + formatMarkdown(getContentWithoutTitle(post.content)) + '</p>' 
-                    }}
-                  />
-                )}
+                <div 
+                  className="blog-content text-gray-700 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{ 
+                    __html: renderMarkdown ? renderMarkdown(getContentWithoutTitle(post.content)) : formatMarkdown(getContentWithoutTitle(post.content))
+                  }}
+                />
               </div>
               
               {/* Post footer */}
