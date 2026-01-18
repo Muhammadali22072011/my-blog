@@ -258,6 +258,38 @@ function BlogPost() {
 
   const postTitle = getPostTitle()
   const keywords = extractKeywords(post.content, 15)
+  
+  // Извлекаем первое изображение из контента для OG image
+  const getFirstImage = (content) => {
+    if (!content) return null
+    
+    // Ищем HTML изображение
+    const htmlImgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i)
+    if (htmlImgMatch) {
+      const src = htmlImgMatch[1]
+      // Если URL относительный, добавляем базовый URL
+      if (!src.startsWith('http')) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${src}`
+      }
+      return src
+    }
+    
+    // Ищем markdown изображение
+    const mdImgMatch = content.match(/!\[([^\]]*)\]\(([^)]+)\)/)
+    if (mdImgMatch) {
+      const src = mdImgMatch[2]
+      if (!src.startsWith('http')) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${src}`
+      }
+      return src
+    }
+    
+    return null
+  }
+  
+  const ogImage = post.og_image || getFirstImage(post.content)
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -265,7 +297,7 @@ function BlogPost() {
       <SEOHead
         title={postTitle}
         description={getExcerpt(post.content)}
-        image={post.og_image}
+        image={ogImage}
         url={window.location.href}
         type="article"
         publishedTime={post.created_at}
@@ -280,7 +312,7 @@ function BlogPost() {
           title: postTitle,
           description: getExcerpt(post.content),
           content: post.content,
-          image: post.og_image,
+          image: ogImage,
           publishedTime: post.created_at,
           modifiedTime: post.updated_at,
           category: post.category,
