@@ -92,12 +92,17 @@ export const logSecurityEvent = async (eventType, additionalData = {}) => {
       ...additionalData
     }
 
-    const { error } = await supabase
+    console.log('📊 Logging security event:', eventType, logData)
+    
+    const { data, error } = await supabase
       .from('security_audit_log')
       .insert([logData])
+      .select()
 
     if (error) {
-      console.error('Error logging security event:', error)
+      console.error('❌ Error logging security event:', error)
+    } else {
+      console.log('✅ Security event logged successfully:', data)
     }
   } catch (error) {
     console.error('Error in logSecurityEvent:', error)
