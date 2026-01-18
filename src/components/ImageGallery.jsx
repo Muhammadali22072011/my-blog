@@ -132,6 +132,19 @@ function ImageGallery({ onImageSelect, className = '' }) {
               style={{ minHeight: '150px' }}
               onClick={() => handleImageClick(image)}
             >
+              {/* Copy URL Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigator.clipboard.writeText(image.url)
+                  alert('✅ URL copied to clipboard!\n\nNow paste it in Featured Image field')
+                }}
+                className="absolute top-3 right-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg z-10 flex items-center gap-1"
+                title="Copy URL"
+              >
+                📋 Copy URL
+              </button>
+              
               {/* Изображение */}
               <img
                 src={image.url}
