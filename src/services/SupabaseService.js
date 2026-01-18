@@ -1030,6 +1030,8 @@ class SupabaseService {
   // Получить список изображений из storage
   async getImages() {
     try {
+      console.log('🔍 [getImages] Начинаем загрузку изображений...')
+      
       const { data, error } = await supabase
         .storage
         .from('images')
@@ -1039,22 +1041,43 @@ class SupabaseService {
           sortBy: { column: 'created_at', order: 'desc' }
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [getImages] Ошибка от Supabase:', error)
+        throw error
+      }
+
+      console.log('📦 [getImages] Получено файлов:', data?.length || 0)
+      console.log('📋 [getImages] Сырые данные:', data)
 
       // Формируем полные URL для изображений
-      const images = data.map(file => ({
-        name: file.name,
-        path: `blog-images/${file.name}`,
-        url: `${supabase.storage.from('images').getPublicUrl(`blog-images/${file.name}`).data.publicUrl}`,
-        size: file.metadata?.size || 0,
-        type: file.metadata?.mimetype || 'image/*',
-        created_at: file.created_at
-      }))
+      const images = data.map(file => {
+        const publicUrl = supabase.storage.from('images').getPublicUrl(`blog-images/${file.name}`).data.publicUrl
+        
+        const imageData = {
+          name: file.name,
+          path: `blog-images/${file.name}`,
+          url: publicUrl,
+          size: file.metadata?.size || 0,
+          type: file.metadata?.mimetype || 'image/*',
+          created_at: file.created_at
+        }
+        
+        console.log('🖼️ [getImages] Обработано изображение:', {
+          name: file.name,
+          url: publicUrl,
+          size: imageData.size
+        })
+        
+        return imageData
+      })
 
-      console.log('Image loaded successfully:', images[0]?.url)
+      console.log('✅ [getImages] Всего изображений обработано:', images.length)
+      console.log('🎯 [getImages] Первое изображение:', images[0])
+      
       return images
     } catch (error) {
-      console.error('Ошибка загрузки изображений:', error)
+      console.error('💥 [getImages] Критическая ошибка:', error)
+      console.error('📍 [getImages] Stack trace:', error.stack)
       throw error
     }
   }

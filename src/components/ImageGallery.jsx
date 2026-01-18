@@ -13,16 +13,23 @@ function ImageGallery({ onImageSelect, className = '' }) {
 
   const loadImages = async () => {
     try {
+      console.log('🎬 [ImageGallery] Начинаем загрузку изображений...')
       setLoading(true)
       setError('')
       
       const imagesList = await supabaseService.getImages()
+      console.log('📸 [ImageGallery] Получено изображений:', imagesList?.length || 0)
+      console.log('📋 [ImageGallery] Список изображений:', imagesList)
+      
       setImages(imagesList)
+      console.log('✅ [ImageGallery] Изображения установлены в state')
     } catch (error) {
-      console.error('Ошибка загрузки изображений:', error)
-      setError('Не удалось загрузить изображения')
+      console.error('❌ [ImageGallery] Ошибка загрузки:', error)
+      console.error('📍 [ImageGallery] Stack trace:', error.stack)
+      setError('Не удалось загрузить изображения: ' + error.message)
     } finally {
       setLoading(false)
+      console.log('🏁 [ImageGallery] Загрузка завершена')
     }
   }
 
@@ -109,25 +116,40 @@ function ImageGallery({ onImageSelect, className = '' }) {
 
       {/* Сетка изображений */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {images.map((image) => (
-          <div
-            key={image.path}
-            className={`
-              relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200
-              ${selectedImage?.path === image.path 
-                ? 'border-blue-500 ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-blue-300'
-              }
-            `}
-            onClick={() => handleImageClick(image)}
-          >
-            {/* Изображение */}
-            <img
-              src={image.url}
-              alt={image.name}
-              className="w-full h-32 object-cover"
-              loading="lazy"
-            />
+        {images.map((image, index) => {
+          console.log(`🖼️ [ImageGallery] Рендерим изображение ${index + 1}:`, {
+            name: image.name,
+            url: image.url,
+            path: image.path
+          })
+          
+          return (
+            <div
+              key={image.path}
+              className={`
+                relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200
+                ${selectedImage?.path === image.path 
+                  ? 'border-blue-500 ring-2 ring-blue-200' 
+                  : 'border-gray-200 hover:border-blue-300'
+                }
+              `}
+              onClick={() => handleImageClick(image)}
+            >
+              {/* Изображение */}
+              <img
+                src={image.url}
+                alt={image.name}
+                className="w-full h-32 object-cover"
+                loading="lazy"
+                onLoad={() => console.log('✅ [ImageGallery] Изображение загружено:', image.name)}
+                onError={(e) => {
+                  console.error('❌ [ImageGallery] Ошибка загрузки изображения:', {
+                    name: image.name,
+                    url: image.url,
+                    error: e
+                  })
+                }}
+              />
             
             {/* Overlay с информацией */}
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200">
@@ -162,7 +184,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
 
       {/* Информация о выбранном изображении */}
