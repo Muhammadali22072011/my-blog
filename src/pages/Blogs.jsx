@@ -388,56 +388,57 @@ Thanks for reading! 🚀`,
                       key={post.id} 
                       className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group"
                     >
-                      <Link to={`/post/${post.id}`} className="block">
-                        {/* Featured Image */}
+                      <Link to={`/post/${post.id}`} className="flex flex-col sm:flex-row">
+                        {/* Content - Left Side */}
+                        <div className="flex-1 p-6">
+                          <div className="flex items-center gap-3 mb-3 flex-wrap">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatDate(post.created_at)}
+                            </span>
+                            <span className="text-gray-300 dark:text-gray-600">•</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {getReadingTime(post.content)} min read
+                            </span>
+                            {post.category && (
+                              <>
+                                <span className="text-gray-300 dark:text-gray-600">•</span>
+                                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs capitalize">
+                                  {post.category}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          
+                          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {getPostTitle(post)}
+                          </h2>
+                          
+                          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
+                            {getExcerpt(post.content)}
+                          </p>
+                          
+                          <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
+                            Read more
+                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                        
+                        {/* Featured Image - Right Side */}
                         {(post.featured_image || post.og_image) && (
-                          <div className="w-full h-48 overflow-hidden">
+                          <div className="w-full sm:w-64 h-48 sm:h-auto flex-shrink-0 overflow-hidden">
                             <img 
                               src={getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image)}
                               alt={getPostTitle(post)}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              onError={(e) => e.target.style.display = 'none'}
+                              onError={(e) => e.target.parentElement.style.display = 'none'}
                             />
                           </div>
                         )}
-                        
-                        <div className="p-6">
-                          <div className="flex items-center gap-3 mb-3">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(post.created_at)}
-                          </span>
-                          <span className="text-gray-300 dark:text-gray-600">•</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {getReadingTime(post.content)} min read
-                          </span>
-                          {post.category && (
-                            <>
-                              <span className="text-gray-300 dark:text-gray-600">•</span>
-                              <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs capitalize">
-                                {post.category}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {getPostTitle(post)}
-                        </h2>
-                        
-                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
-                          {getExcerpt(post.content)}
-                        </p>
-                        
-                        <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium group-hover:translate-x-2 transition-transform">
-                          Read more
-                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                        </div>
                       </Link>
                     </article>
                   ))}
