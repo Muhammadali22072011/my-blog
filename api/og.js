@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
     
     // Извлекаем первое изображение из контента
-    let ogImage = post.og_image;
+    let ogImage = post.featured_image || post.og_image;
     
     if (!ogImage && post.content) {
       // Ищем HTML изображение
@@ -43,8 +43,11 @@ export default async function handler(req, res) {
       
       // Если URL относительный, добавляем базовый URL
       if (ogImage && !ogImage.startsWith('http')) {
-        ogImage = `${supabaseUrl}/storage/v1/object/public/images/blog-images/${ogImage}`;
+        ogImage = `${supabaseUrl}/storage/v1/object/public/${ogImage}`;
       }
+    } else if (ogImage && !ogImage.startsWith('http')) {
+      // Преобразуем featured_image в полный URL
+      ogImage = `${supabaseUrl}/storage/v1/object/public/${ogImage}`;
     }
     
     // Извлекаем заголовок
@@ -60,6 +63,32 @@ export default async function handler(req, res) {
       }
     }
     
+    // Генерируем excerpt
+    let description = post.excerpt || '';
+    if (!description && post.content) {
+      // Удаляем markdown форматирование
+      const plainText = post.content
+        .replace(/^#+ .*/gm, '')
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/`(.*?)`/g, '$1')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/>\s.*/g, '')
+        .replace(/- .*/g, '')
+        .replace(/\n+/g, ' ')
+        .trim();
+      
+      if (plainText && plainText.length >= 10) {
+        description = plainText.length > 160 ? plainText.substring(0, 160) + '...' : plainText;
+      } else {
+        description = title + ' - Read more on Muhammadali Blog';
+      }
+    }
+    
+    if (!description) {
+      description = title + ' - Read more on Muhammadali Blog';
+    }
+    
     // Генерируем HTML с OG мета-тегами
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -72,7 +101,7 @@ export default async function handler(req, res) {
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://izzatullaev.uz/post/${postId}">
     <meta property="og:title" content="${title}">
-    <meta property="og:description" content="${post.excerpt || title}">
+    <meta property="og:description" content="${description}">
     ${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
     ${ogImage ? `<meta property="og:image:width" content="1200">` : ''}
     ${ogImage ? `<meta property="og:image:height" content="630">` : ''}
@@ -81,7 +110,7 @@ export default async function handler(req, res) {
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${title}">
-    <meta name="twitter:description" content="${post.excerpt || title}">
+    <meta name="twitter:description" content="${description}">
     ${ogImage ? `<meta name="twitter:image" content="${ogImage}">` : ''}
     
     <!-- Redirect to React app -->
