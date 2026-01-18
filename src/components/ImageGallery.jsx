@@ -120,7 +120,9 @@ function ImageGallery({ onImageSelect, className = '' }) {
           console.log(`🖼️ [ImageGallery] Рендерим изображение ${index + 1}:`, {
             name: image.name,
             url: image.url,
-            path: image.path
+            path: image.path,
+            size: image.size,
+            type: image.type
           })
           
           return (
@@ -146,8 +148,12 @@ function ImageGallery({ onImageSelect, className = '' }) {
                   console.error('❌ [ImageGallery] Ошибка загрузки изображения:', {
                     name: image.name,
                     url: image.url,
-                    error: e
+                    path: image.path,
+                    errorType: e.type,
+                    errorTarget: e.target.src,
+                    errorMessage: e.target.error || 'Unknown error'
                   })
+                  console.error('🔗 [ImageGallery] Попробуй открыть URL в браузере:', image.url)
                 }}
               />
             
