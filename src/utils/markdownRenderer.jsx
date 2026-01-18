@@ -2,6 +2,20 @@ import React from 'react'
 import CustomVideoPlayer from '../components/CustomVideoPlayer'
 
 /**
+ * Вспомогательная функция для формирования полного URL изображения
+ */
+const getFullImageUrl = (url) => {
+  if (!url) return ''
+  // Если URL уже полный (начинается с http/https), возвращаем как есть
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  // Если это относительный путь, добавляем базовый URL Supabase storage
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+  return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${url}`
+}
+
+/**
  * Улучшенный рендерер Markdown для React
  * Поддерживает все основные элементы Markdown с правильной обработкой
  */
@@ -196,14 +210,19 @@ export const renderMarkdown = (text, options = {}) => {
       const imageMatch = trimmedLine.match(/!\[([^\]]*)\]\(([^)]+)\)/)
       if (imageMatch) {
         const [, alt, url] = imageMatch
+        const fullUrl = getFullImageUrl(url)
+        
         elements.push(
           <div key={`img-${elements.length}`} className="my-4">
             <img
-              src={url}
+              src={fullUrl}
               alt={alt || 'Изображение'}
               className="w-full h-auto rounded-lg shadow-lg"
               loading="lazy"
-              onError={(e) => e.target.style.display = 'none'}
+              onError={(e) => {
+                console.error('Ошибка загрузки изображения:', fullUrl)
+                e.target.style.display = 'none'
+              }}
             />
             {alt && alt !== 'Изображение' && (
               <p className="text-center text-sm text-gray-500 mt-2 italic">{alt}</p>
@@ -240,14 +259,30 @@ export const renderMarkdown = (text, options = {}) => {
         const imgMatch = trimmedLine.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
         if (imgMatch) {
           const src = imgMatch[1]
+          const fullSrc = getFullImageUrl(src)
+          
           const altMatch = trimmedLine.match(/alt=["']([^"']*)["']/i)
           const alt = altMatch ? altMatch[1] : 'Изображение'
           
           elements.push(
             <div key={`img-${elements.length}`} className="my-4">
               <img
-                src={src}
+                src={fullSrc}
                 alt={alt}
+                className="w-full h-auto rounded-lg shadow-lg"
+                loading="lazy"
+                onError={(e) => {
+                  console.error('Ошибка загрузки изображения:', fullSrc)
+                  e.target.style.display = 'none'
+                }}
+              />
+              {alt && alt !== 'Изображение' && (
+                <p className="text-center text-sm text-gray-500 mt-2 italic">{alt}</p>
+              )}
+            </div>
+          )
+        }
+      }
                 className="w-full h-auto rounded-lg shadow-lg"
                 loading="lazy"
                 onError={(e) => e.target.style.display = 'none'}
