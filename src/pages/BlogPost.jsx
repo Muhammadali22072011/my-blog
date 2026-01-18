@@ -289,7 +289,7 @@ function BlogPost() {
     return null
   }
   
-  const ogImage = post.og_image || getFirstImage(post.content)
+  const ogImage = post.featured_image || post.og_image || getFirstImage(post.content)
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -359,6 +359,20 @@ function BlogPost() {
           {/* Post header */}
           <header className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white leading-tight mb-4">{postTitle}</h1>
+            
+            {/* Featured Image */}
+            {(post.featured_image || post.og_image) && (
+              <div className="w-full rounded-xl overflow-hidden mb-6">
+                <img 
+                  src={post.featured_image || post.og_image}
+                  alt={postTitle}
+                  className="w-full h-auto object-cover"
+                  style={{ maxHeight: '500px' }}
+                  onError={(e) => e.target.style.display = 'none'}
+                />
+              </div>
+            )}
+            
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400 text-sm">
               <span>{formatDate(post.created_at)}</span>
               <span>•</span>

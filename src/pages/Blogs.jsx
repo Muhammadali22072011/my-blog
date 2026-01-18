@@ -380,8 +380,21 @@ Thanks for reading! 🚀`,
                       key={post.id} 
                       className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group"
                     >
-                      <Link to={`/post/${post.id}`} className="block p-6">
-                        <div className="flex items-center gap-3 mb-3">
+                      <Link to={`/post/${post.id}`} className="block">
+                        {/* Featured Image */}
+                        {(post.featured_image || post.og_image) && (
+                          <div className="w-full h-48 overflow-hidden">
+                            <img 
+                              src={post.featured_image || post.og_image}
+                              alt={getPostTitle(post)}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => e.target.style.display = 'none'}
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="p-6">
+                          <div className="flex items-center gap-3 mb-3">
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {formatDate(post.created_at)}
                           </span>
@@ -415,6 +428,7 @@ Thanks for reading! 🚀`,
                           <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
+                        </div>
                         </div>
                       </Link>
                     </article>
