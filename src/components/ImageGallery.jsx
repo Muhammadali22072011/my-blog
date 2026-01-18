@@ -128,22 +128,20 @@ function ImageGallery({ onImageSelect, className = '' }) {
           return (
             <div
               key={image.path}
-              className={`
-                relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200
-                ${selectedImage?.path === image.path 
-                  ? 'border-blue-500 ring-2 ring-blue-200' 
-                  : 'border-gray-200 hover:border-blue-300'
-                }
-              `}
-              style={{ minHeight: '128px' }}
+              className="relative cursor-pointer rounded-lg border-2 border-gray-200 hover:border-blue-300 p-2 bg-white"
+              style={{ minHeight: '150px' }}
               onClick={() => handleImageClick(image)}
             >
               {/* Изображение */}
               <img
                 src={image.url}
                 alt={image.name}
-                className="w-full h-32 object-contain bg-gray-100"
-                loading="lazy"
+                style={{ 
+                  width: '100%', 
+                  height: '120px',
+                  objectFit: 'contain',
+                  display: 'block'
+                }}
                 onLoad={(e) => {
                   console.log('✅ [ImageGallery] Изображение загружено:', image.name)
                   console.log('📐 [ImageGallery] Размеры:', {
@@ -176,18 +174,10 @@ function ImageGallery({ onImageSelect, className = '' }) {
                 }}
               />
             
-            {/* Overlay с информацией */}
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200">
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="text-white text-center">
-                  <p className="text-sm font-medium truncate px-2">
-                    {image.name}
-                  </p>
-                  <p className="text-xs opacity-75">
-                    {(image.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-              </div>
+            {/* Информация */}
+            <div className="mt-2">
+              <p className="text-xs text-gray-600 truncate">{image.name}</p>
+              <p className="text-xs text-gray-400">{(image.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
 
             {/* Кнопка удаления */}
@@ -196,7 +186,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
                 e.stopPropagation()
                 handleDeleteImage(image)
               }}
-              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
+              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600"
               title="Удалить изображение"
             >
               ×
