@@ -57,14 +57,38 @@ const getLocationInfo = async () => {
         
         // Получаем город и страну по координатам через обратное геокодирование
         try {
-          const geoResponse = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
-          )
-          const geoData = await geoResponse.json()
+          // Пробуем несколько API для обратного геокодирования
           
-          if (geoData.address) {
-            locationData.city = geoData.address.city || geoData.address.town || geoData.address.village
-            locationData.country = geoData.address.country
+          // Вариант 1: BigDataCloud (более точный для Узбекистана)
+          try {
+            const geoResponse = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${position.coords.latitude}&longitude=${position.coords.longitude}&localityLanguage=ru`
+            )
+            const geoData = await geoResponse.json()
+            
+            console.log('🏙️ Обратное геокодирование от BigDataCloud:', geoData)
+            
+            if (geoData.city || geoData.locality) {
+              locationData.city = geoData.city || geoData.locality
+              locationData.country = geoData.countryName
+              console.log('✅ Город определен:', locationData.city, locationData.country)
+            }
+          } catch (err) {
+            console.warn('BigDataCloud failed, trying OpenStreetMap...', err)
+            
+            // Вариант 2: OpenStreetMap (запасной)
+            const geoResponse = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&accept-language=ru`
+            )
+            const geoData = await geoResponse.json()
+            
+            console.log('🏙️ Обратное геокодирование от OpenStreetMap:', geoData)
+            
+            if (geoData.address) {
+              locationData.city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.state
+              locationData.country = geoData.address.country
+              console.log('✅ Город определен:', locationData.city, locationData.country)
+            }
           }
         } catch (err) {
           console.warn('Reverse geocoding failed:', err)
