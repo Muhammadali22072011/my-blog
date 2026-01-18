@@ -6,12 +6,10 @@ export default defineConfig({
   plugins: [react()],
   build: {
     // Оптимизация для продакшена
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Удаляем console.log в продакшене
-        drop_debugger: true
-      }
+    minify: 'esbuild', // Используем встроенный esbuild (быстрее и не требует дополнительных зависимостей)
+    // Удаляем console.log через esbuild
+    esbuild: {
+      drop: ['console', 'debugger']
     },
     // Разделение кода для лучшей производительности
     rollupOptions: {
