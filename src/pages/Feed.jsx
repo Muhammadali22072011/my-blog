@@ -15,6 +15,35 @@ function Feed() {
   const loaderRef = useRef(null)
   const postsPerLoad = 10
 
+  // Simple markdown formatter (fallback when react-markdown fails)
+  const formatMarkdown = (text) => {
+    if (!text) return ''
+    
+    return text
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-3">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-8 mb-4">$1</h1>')
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+      .replace(/__(.*?)__/g, '<strong class="font-bold">$1</strong>')
+      // Italic
+      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+      .replace(/_(.*?)_/g, '<em class="italic">$1</em>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline" target="_blank" rel="noopener">$1</a>')
+      // Code blocks
+      .replace(/```([^`]+)```/g, '<pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto my-4"><code>$1</code></pre>')
+      // Inline code
+      .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm">$1</code>')
+      // Lists
+      .replace(/^\* (.*$)/gim, '<li class="ml-4">• $1</li>')
+      .replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p class="mb-4">')
+      .replace(/\n/g, '<br/>')
+  }
+
   // Get published posts
   const publishedPosts = posts.filter(post => post.status === 'published')
   
@@ -225,40 +254,49 @@ function Feed() {
               
               {/* Full content with markdown */}
               <div className="prose prose-lg dark:prose-invert max-w-none mb-6">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    code({ node, inline, className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || '')
-                      return !inline && match ? (
-                        <SyntaxHighlighter
-                          style={vscDarkPlus}
-                          language={match[1]}
-                          PreTag="div"
-                          {...props}
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      )
-                    },
-                    img({ src, alt }) {
-                      return (
-                        <img 
-                          src={getFullImageUrl(src)} 
-                          alt={alt || ''} 
-                          className="rounded-lg w-full"
-                          loading="lazy"
-                        />
-                      )
-                    }
-                  }}
-                >
-                  {getContentWithoutTitle(post.content)}
-                </ReactMarkdown>
+                {typeof ReactMarkdown !== 'undefined' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, inline, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      img({ src, alt }) {
+                        return (
+                          <img 
+                            src={getFullImageUrl(src)} 
+                            alt={alt || ''} 
+                            className="rounded-lg w-full"
+                            loading="lazy"
+                          />
+                        )
+                      }
+                    }}
+                  >
+                    {getContentWithoutTitle(post.content)}
+                  </ReactMarkdown>
+                ) : (
+                  <div 
+                    className="formatted-content"
+                    dangerouslySetInnerHTML={{ 
+                      __html: '<p class="mb-4">' + formatMarkdown(getContentWithoutTitle(post.content)) + '</p>' 
+                    }}
+                  />
+                )}
               </div>
               
               {/* Post footer */}
