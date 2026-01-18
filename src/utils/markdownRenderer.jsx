@@ -252,16 +252,28 @@ export const renderMarkdown = (text, options = {}) => {
       continue
     }
 
-    // HTML элементы
+    // HTML элементы (могут быть многострочными)
     if (trimmedLine.includes('<img') || trimmedLine.includes('<video')) {
+      // Собираем весь HTML тег (может быть многострочным)
+      let htmlContent = trimmedLine
+      let currentLine = i
+      
+      // Если тег не закрыт, собираем следующие строки
+      while (currentLine < lines.length && !htmlContent.includes('>')) {
+        currentLine++
+        if (currentLine < lines.length) {
+          htmlContent += ' ' + lines[currentLine].trim()
+        }
+      }
+      
       // Обработка изображений
-      if (trimmedLine.includes('<img')) {
-        const imgMatch = trimmedLine.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
+      if (htmlContent.includes('<img')) {
+        const imgMatch = htmlContent.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
         if (imgMatch) {
           const src = imgMatch[1]
           const fullSrc = getFullImageUrl(src)
           
-          const altMatch = trimmedLine.match(/alt=["']([^"']*)["']/i)
+          const altMatch = htmlContent.match(/alt=["']([^"']*)["']/i)
           const alt = altMatch ? altMatch[1] : 'Изображение'
           
           elements.push(
@@ -282,14 +294,16 @@ export const renderMarkdown = (text, options = {}) => {
             </div>
           )
         }
+        i = currentLine + 1
+        continue
       }
       
       // Обработка видео с кастомным плеером
-      if (trimmedLine.includes('<video')) {
-        const videoMatch = trimmedLine.match(/<video[^>]+src=["']([^"']+)["'][^>]*>/i)
+      if (htmlContent.includes('<video')) {
+        const videoMatch = htmlContent.match(/<video[^>]+src=["']([^"']+)["'][^>]*>/i)
         if (videoMatch) {
           const src = videoMatch[1]
-          const titleMatch = trimmedLine.match(/title=["']([^"']*)["']/i)
+          const titleMatch = htmlContent.match(/title=["']([^"']*)["']/i)
           const title = titleMatch ? titleMatch[1] : 'Video'
           
           elements.push(
@@ -301,9 +315,11 @@ export const renderMarkdown = (text, options = {}) => {
             </div>
           )
         }
+        i = currentLine + 1
+        continue
       }
       
-      i++
+      i = currentLine + 1
       continue
     }
 
