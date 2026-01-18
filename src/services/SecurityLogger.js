@@ -31,29 +31,76 @@ const getBrowserInfo = () => {
 // Получение IP адреса и геолокации
 const getLocationInfo = async () => {
   try {
-    // Пробуем несколько API для получения более точных данных
+    let locationData = {
+      ip_address: null,
+      country: null,
+      city: null,
+      latitude: null,
+      longitude: null
+    }
     
-    // Вариант 1: ipapi.co (основной)
+    // Шаг 1: Пробуем получить точную геолокацию от браузера (требует разрешения)
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          })
+        })
+        
+        console.log('📍 Точная геолокация от браузера:', position.coords)
+        
+        locationData.latitude = position.coords.latitude
+        locationData.longitude = position.coords.longitude
+        
+        // Получаем город и страну по координатам через обратное геокодирование
+        try {
+          const geoResponse = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+          )
+          const geoData = await geoResponse.json()
+          
+          if (geoData.address) {
+            locationData.city = geoData.address.city || geoData.address.town || geoData.address.village
+            locationData.country = geoData.address.country
+          }
+        } catch (err) {
+          console.warn('Reverse geocoding failed:', err)
+        }
+      } catch (geoError) {
+        console.log('⚠️ Пользователь отклонил доступ к геолокации или браузер не поддерживает:', geoError.message)
+      }
+    }
+    
+    // Шаг 2: Получаем IP адрес и дополняем данные если геолокация не сработала
     try {
       const response = await fetch('https://ipapi.co/json/')
       const data = await response.json()
       
       console.log('🌍 Геолокация от ipapi.co:', data)
       
-      if (data.ip) {
-        return {
-          ip_address: data.ip,
-          country: data.country_name,
-          city: data.city,
-          latitude: data.latitude,
-          longitude: data.longitude
-        }
+      locationData.ip_address = data.ip
+      
+      // Используем данные от IP API только если браузер не дал точные координаты
+      if (!locationData.latitude) {
+        locationData.country = data.country_name
+        locationData.city = data.city
+        locationData.latitude = data.latitude
+        locationData.longitude = data.longitude
+      } else if (!locationData.country) {
+        // Если браузер дал координаты, но не удалось получить город/страну
+        locationData.country = data.country_name
+        locationData.city = data.city
       }
+      
+      return locationData
     } catch (err) {
       console.warn('ipapi.co failed, trying alternative...', err)
     }
     
-    // Вариант 2: ip-api.com (запасной)
+    // Шаг 3: Запасной API если ipapi.co не сработал
     try {
       const response = await fetch('http://ip-api.com/json/')
       const data = await response.json()
@@ -61,26 +108,25 @@ const getLocationInfo = async () => {
       console.log('🌍 Геолокация от ip-api.com:', data)
       
       if (data.status === 'success') {
-        return {
-          ip_address: data.query,
-          country: data.country,
-          city: data.city,
-          latitude: data.lat,
-          longitude: data.lon
+        locationData.ip_address = data.query
+        
+        if (!locationData.latitude) {
+          locationData.country = data.country
+          locationData.city = data.city
+          locationData.latitude = data.lat
+          locationData.longitude = data.lon
+        } else if (!locationData.country) {
+          locationData.country = data.country
+          locationData.city = data.city
         }
       }
+      
+      return locationData
     } catch (err) {
       console.warn('ip-api.com failed', err)
     }
     
-    // Если все API не сработали
-    return {
-      ip_address: null,
-      country: null,
-      city: null,
-      latitude: null,
-      longitude: null
-    }
+    return locationData
   } catch (error) {
     console.error('Error getting location:', error)
     return {
