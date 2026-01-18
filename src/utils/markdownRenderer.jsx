@@ -212,6 +212,12 @@ export const renderMarkdown = (text, options = {}) => {
         const [, alt, url] = imageMatch
         const fullUrl = getFullImageUrl(url)
         
+        console.log('🖼️ [renderMarkdown] Обрабатываем изображение:', {
+          original: url,
+          fullUrl: fullUrl,
+          alt: alt
+        })
+        
         elements.push(
           <div key={`img-${elements.length}`} className="my-4">
             <img
@@ -220,8 +226,11 @@ export const renderMarkdown = (text, options = {}) => {
               className="w-full h-auto rounded-lg shadow-lg"
               loading="lazy"
               onError={(e) => {
-                console.error('Ошибка загрузки изображения:', fullUrl)
+                console.error('❌ [renderMarkdown] Ошибка загрузки изображения:', fullUrl)
                 e.target.style.display = 'none'
+              }}
+              onLoad={() => {
+                console.log('✅ [renderMarkdown] Изображение загружено:', fullUrl)
               }}
             />
             {alt && alt !== 'Изображение' && (
@@ -273,6 +282,12 @@ export const renderMarkdown = (text, options = {}) => {
           const src = imgMatch[1]
           const fullSrc = getFullImageUrl(src)
           
+          console.log('🖼️ [renderMarkdown] Обрабатываем HTML изображение:', {
+            original: src,
+            fullSrc: fullSrc,
+            htmlContent: htmlContent
+          })
+          
           const altMatch = htmlContent.match(/alt=["']([^"']*)["']/i)
           const alt = altMatch ? altMatch[1] : 'Изображение'
           
@@ -284,8 +299,11 @@ export const renderMarkdown = (text, options = {}) => {
                 className="w-full h-auto rounded-lg shadow-lg"
                 loading="lazy"
                 onError={(e) => {
-                  console.error('Ошибка загрузки изображения:', fullSrc)
+                  console.error('❌ [renderMarkdown] Ошибка загрузки HTML изображения:', fullSrc)
                   e.target.style.display = 'none'
+                }}
+                onLoad={() => {
+                  console.log('✅ [renderMarkdown] HTML изображение загружено:', fullSrc)
                 }}
               />
               {alt && alt !== 'Изображение' && (
