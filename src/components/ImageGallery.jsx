@@ -135,6 +135,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
                   : 'border-gray-200 hover:border-blue-300'
                 }
               `}
+              style={{ minHeight: '128px', backgroundColor: '#f3f4f6' }}
               onClick={() => handleImageClick(image)}
             >
               {/* Изображение */}
@@ -143,7 +144,16 @@ function ImageGallery({ onImageSelect, className = '' }) {
                 alt={image.name}
                 className="w-full h-32 object-cover"
                 loading="lazy"
-                onLoad={() => console.log('✅ [ImageGallery] Изображение загружено:', image.name)}
+                style={{ display: 'block', minHeight: '128px' }}
+                onLoad={(e) => {
+                  console.log('✅ [ImageGallery] Изображение загружено:', image.name)
+                  console.log('📐 [ImageGallery] Размеры:', {
+                    width: e.target.naturalWidth,
+                    height: e.target.naturalHeight,
+                    displayWidth: e.target.width,
+                    displayHeight: e.target.height
+                  })
+                }}
                 onError={(e) => {
                   const errorDetails = {
                     name: image.name,
