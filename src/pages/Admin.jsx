@@ -15,6 +15,7 @@ import OGImagePreview from '../components/OGImagePreview'
 import SEOAnalyzer from '../components/SEOAnalyzer'
 import SEOTools from '../components/SEOTools'
 import SecurityDashboard from '../components/SecurityDashboard'
+import SecurityAuditLog from '../components/SecurityAuditLog'
 
 
 // ============================================================================
