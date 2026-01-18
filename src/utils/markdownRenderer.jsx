@@ -283,17 +283,6 @@ export const renderMarkdown = (text, options = {}) => {
           )
         }
       }
-                className="w-full h-auto rounded-lg shadow-lg"
-                loading="lazy"
-                onError={(e) => e.target.style.display = 'none'}
-              />
-              {alt && alt !== 'Изображение' && (
-                <p className="text-center text-sm text-gray-500 mt-2 italic">{alt}</p>
-              )}
-            </div>
-          )
-        }
-      }
       
       // Обработка видео с кастомным плеером
       if (trimmedLine.includes('<video')) {
