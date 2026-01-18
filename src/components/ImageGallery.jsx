@@ -142,7 +142,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
               <img
                 src={image.url}
                 alt={image.name}
-                className="w-full h-32 object-cover bg-gray-200"
+                className="w-full h-32 object-contain bg-gray-100"
                 loading="lazy"
                 onLoad={(e) => {
                   console.log('✅ [ImageGallery] Изображение загружено:', image.name)
