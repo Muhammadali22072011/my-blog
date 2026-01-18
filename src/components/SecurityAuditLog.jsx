@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../services/SupabaseService'
+import { supabase } from '../config/supabase'
 
 function SecurityAuditLog() {
   const [logs, setLogs] = useState([])
