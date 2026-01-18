@@ -135,24 +135,29 @@ function ImageGallery({ onImageSelect, className = '' }) {
                   : 'border-gray-200 hover:border-blue-300'
                 }
               `}
-              style={{ minHeight: '128px', backgroundColor: '#f3f4f6' }}
+              style={{ minHeight: '128px' }}
               onClick={() => handleImageClick(image)}
             >
               {/* Изображение */}
               <img
                 src={image.url}
                 alt={image.name}
-                className="w-full h-32 object-cover"
+                className="w-full h-32 object-cover bg-gray-200"
                 loading="lazy"
-                style={{ display: 'block', minHeight: '128px' }}
                 onLoad={(e) => {
                   console.log('✅ [ImageGallery] Изображение загружено:', image.name)
                   console.log('📐 [ImageGallery] Размеры:', {
-                    width: e.target.naturalWidth,
-                    height: e.target.naturalHeight,
+                    naturalWidth: e.target.naturalWidth,
+                    naturalHeight: e.target.naturalHeight,
                     displayWidth: e.target.width,
-                    displayHeight: e.target.height
+                    displayHeight: e.target.height,
+                    complete: e.target.complete,
+                    src: e.target.src
                   })
+                  // Проверяем что изображение действительно видимо
+                  if (e.target.naturalWidth === 0 || e.target.naturalHeight === 0) {
+                    console.error('⚠️ [ImageGallery] Изображение загружено но имеет нулевые размеры!')
+                  }
                 }}
                 onError={(e) => {
                   const errorDetails = {
