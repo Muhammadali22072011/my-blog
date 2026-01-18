@@ -46,36 +46,51 @@ function Feed() {
     return post.excerpt || 'Untitled Post'
   }
 
-  // Get excerpt
-  const getExcerpt = (content, maxLength = 200) => {
-    if (!content) return 'Read this blog post'
-    const plainText = content
+  // Get content preview (first few paragraphs)
+  const getContentPreview = (content) => {
+    if (!content) return ''
+    
+    // Remove title (first # heading)
+    let contentWithoutTitle = content
+    const lines = content.split('\n')
+    let foundTitle = false
+    const filteredLines = []
+    
+    for (const line of lines) {
+      if (!foundTitle && line.trim().startsWith('# ')) {
+        foundTitle = true
+        continue
+      }
+      filteredLines.push(line)
+    }
+    
+    contentWithoutTitle = filteredLines.join('\n')
+    
+    // Get first 500 characters of content
+    const plainText = contentWithoutTitle
       .replace(/<[^>]+>/g, '')
-      .replace(/^#+ .*/gm, '')
+      .replace(/^#{2,6} /gm, '') // Remove other headers but keep text
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/\*(.*?)\*/g, '$1')
       .replace(/`(.*?)`/g, '$1')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
-      .replace(/>\s.*/g, '')
-      .replace(/- .*/g, '')
-      .replace(/\n+/g, ' ')
       .trim()
     
-    if (!plainText || plainText.length < 10) {
-      const lines = content.split('\n')
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('# ')) {
-          const title = trimmed.substring(2)
-          return title.length > maxLength ? title.substring(0, maxLength) + '...' : title
-        }
-      }
-      return 'Read this blog post'
+    if (plainText.length <= 500) return plainText
+    
+    // Cut at last sentence within 500 chars
+    const preview = plainText.substring(0, 500)
+    const lastPeriod = preview.lastIndexOf('.')
+    const lastQuestion = preview.lastIndexOf('?')
+    const lastExclamation = preview.lastIndexOf('!')
+    const lastSentence = Math.max(lastPeriod, lastQuestion, lastExclamation)
+    
+    if (lastSentence > 200) {
+      return preview.substring(0, lastSentence + 1)
     }
     
-    if (plainText.length <= maxLength) return plainText
-    return plainText.substring(0, maxLength).trim() + '...'
+    return preview + '...'
   }
 
   // Get reading time
@@ -185,65 +200,70 @@ function Feed() {
       </div>
 
       {/* Posts feed */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {displayedPosts.map(post => (
           <article 
             key={post.id} 
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300 group"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all duration-300"
           >
-            <Link to={`/post/${post.id}`}>
-              <div className="p-6">
-                {/* Meta info */}
-                <div className="flex items-center gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{formatDate(post.created_at)}</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {getReadingTime(post.content)} мин
-                  </span>
-                  {post.category && (
-                    <>
-                      <span>•</span>
-                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full capitalize">
-                        {post.category}
-                      </span>
-                    </>
-                  )}
-                </div>
-                
-                {/* Title */}
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <div className="p-6">
+              {/* Meta info */}
+              <div className="flex items-center gap-3 mb-4 text-xs text-gray-500 dark:text-gray-400">
+                <span>{formatDate(post.created_at)}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {getReadingTime(post.content)} мин
+                </span>
+                {post.category && (
+                  <>
+                    <span>•</span>
+                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full capitalize">
+                      {post.category}
+                    </span>
+                  </>
+                )}
+              </div>
+              
+              {/* Title */}
+              <Link to={`/post/${post.id}`}>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   {getPostTitle(post)}
                 </h2>
-                
-                {/* Excerpt */}
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-4">
-                  {getExcerpt(post.content)}
-                </p>
-                
-                {/* Featured image */}
-                {(post.featured_image || post.og_image) && (
-                  <div className="mt-4 rounded-lg overflow-hidden">
+              </Link>
+              
+              {/* Featured image */}
+              {(post.featured_image || post.og_image) && (
+                <Link to={`/post/${post.id}`} className="block mb-4">
+                  <div className="rounded-lg overflow-hidden">
                     <img 
                       src={getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image)}
                       alt={getPostTitle(post)}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => e.target.parentElement.style.display = 'none'}
+                      className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300"
+                      onError={(e) => e.target.parentElement.parentElement.style.display = 'none'}
                     />
                   </div>
-                )}
-                
-                {/* Read more */}
-                <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium mt-4 group-hover:translate-x-2 transition-transform">
-                  Читать далее
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
+                </Link>
+              )}
+              
+              {/* Content preview */}
+              <div className="text-gray-700 dark:text-gray-300 text-base leading-relaxed mb-4 whitespace-pre-line">
+                {getContentPreview(post.content)}
               </div>
-            </Link>
+              
+              {/* Read more link */}
+              <Link 
+                to={`/post/${post.id}`}
+                className="inline-flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium hover:translate-x-2 transition-transform"
+              >
+                Читать далее
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
           </article>
         ))}
       </div>
