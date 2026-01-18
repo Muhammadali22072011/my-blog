@@ -223,7 +223,19 @@ function SecurityAuditLog() {
                       {formatDate(log.created_at)}
                     </td>
                     <td className="px-4 py-3 text-sm font-mono text-gray-800 dark:text-gray-200">
-                      {log.ip_address || 'N/A'}
+                      {log.ip_address ? (
+                        <a
+                          href={`https://ipinfo.io/${log.ip_address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                          title="Информация об IP адресе"
+                        >
+                          {log.ip_address}
+                        </a>
+                      ) : (
+                        'N/A'
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-1">
@@ -237,9 +249,15 @@ function SecurityAuditLog() {
                         <div>
                           <div>🌍 {log.city}, {log.country}</div>
                           {log.latitude && log.longitude && (
-                            <div className="text-xs text-gray-500">
+                            <a
+                              href={`https://www.google.com/maps?q=${log.latitude},${log.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                              title="Открыть на карте"
+                            >
                               📍 {log.latitude.toFixed(4)}, {log.longitude.toFixed(4)}
-                            </div>
+                            </a>
                           )}
                         </div>
                       ) : (
@@ -248,9 +266,15 @@ function SecurityAuditLog() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       {log.page_url ? (
-                        <div className="max-w-xs truncate" title={log.page_url}>
+                        <a
+                          href={log.page_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="max-w-xs truncate block text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                          title={log.page_url}
+                        >
                           {log.page_title || log.page_url}
-                        </div>
+                        </a>
                       ) : (
                         'N/A'
                       )}
