@@ -5,10 +5,15 @@ export default {
     // Получаем ответ от статических файлов
     const response = await env.ASSETS.fetch(request);
     
-    // SPA fallback: если файл не найден и это не запрос к файлу (без расширения)
-    // возвращаем index.html для обработки роутинга на клиенте
-    if (response.status === 404 && !url.pathname.includes('.')) {
-      return env.ASSETS.fetch(new URL('/index.html', request.url));
+    // SPA fallback: если 404 и это не файл со статическим расширением
+    if (response.status === 404) {
+      const ext = url.pathname.split('.').pop();
+      const staticExtensions = ['js', 'css', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'eot', 'json', 'xml', 'txt', 'webmanifest'];
+      
+      // Если это не статический файл - возвращаем index.html для SPA роутинга
+      if (!staticExtensions.includes(ext) || !url.pathname.includes('.')) {
+        return env.ASSETS.fetch(new URL('/index.html', request.url));
+      }
     }
     
     return response;
