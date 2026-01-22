@@ -54,15 +54,7 @@ function BlogPost() {
       
       const parsedId = parseInt(id)
       
-      if (posts && posts.length > 0) {
-        const foundPost = posts.find(p => p.id === parsedId)
-        if (foundPost) {
-          setPost(foundPost)
-          setPostError(null)
-          return
-        }
-      }
-      
+      // Всегда загружаем пост напрямую из базы данных для гарантии актуальности
       setPostLoading(true)
       setPostError(null)
       
@@ -93,11 +85,10 @@ function BlogPost() {
 
     if (id && !isNaN(parseInt(id))) {
       setPost(null)
-      setPostLoading(false)
       setPostError(null)
       loadPost()
     }
-  }, [posts, id])
+  }, [id])
 
   if (loading || postLoading) {
     return (

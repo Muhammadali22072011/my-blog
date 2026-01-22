@@ -75,16 +75,6 @@ function Layout() {
               </h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="/login" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors flex items-center gap-2">
-                    <span>🔐</span> Войти
-                  </a>
-                </li>
-                <li>
-                  <a href="/register" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors flex items-center gap-2">
-                    <span>✨</span> Регистрация
-                  </a>
-                </li>
-                <li>
                   <a href="/admin" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors flex items-center gap-2">
                     <span>⚙️</span> Админ панель
                   </a>
@@ -95,21 +85,10 @@ function Layout() {
 
           {/* Разделитель */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex justify-center items-center">
               <p className="text-gray-500 dark:text-gray-400 text-sm">
-                © {new Date().getFullYear()} {siteSettings?.site_name || 'Muhammadali Blog'}. All rights reserved.
+                © {new Date().getFullYear()} {siteSettings?.site_name || 'My Blog'}. All rights reserved.
               </p>
-              <div className="flex space-x-6 mt-4 md:mt-0">
-                <a href="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">
-                  Конфиденциальность
-                </a>
-                <a href="/terms" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">
-                  Условия
-                </a>
-                <a href="/contact" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">
-                  Контакты
-                </a>
-              </div>
             </div>
           </div>
         </div>
