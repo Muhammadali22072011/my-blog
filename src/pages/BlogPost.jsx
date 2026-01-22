@@ -11,7 +11,6 @@ import { BookmarkButton } from '../components/Bookmarks'
 import ViewCounter from '../components/ViewCounter'
 import SEOHead from '../components/SEOHead'
 import SEOKeywords from '../components/SEOKeywords'
-import FloatingTOC from '../components/FloatingTOC'
 import { extractKeywords } from '../utils/seoKeywordExtractor'
 import ExportPost from '../components/ExportPost'
 import QuoteShare from '../components/QuoteShare'
@@ -333,9 +332,6 @@ function BlogPost() {
         type="article"
       />
 
-      {/* Floating TOC */}
-      <FloatingTOC content={post.content} />
-
       {/* Quote Share */}
       <QuoteShare />
 
@@ -477,31 +473,6 @@ function BlogPost() {
                       </h4>
                     </Link>
                   ) : <div></div>}
-                </div>
-              </div>
-            )}
-
-            {/* Related Posts */}
-            {relatedPosts.length > 0 && (
-              <div className="mb-12">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 text-center">Related Posts</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {relatedPosts.map(relatedPost => (
-                    <Link
-                      key={relatedPost.id}
-                      to={`/post/${relatedPost.id}`}
-                      className="block p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all hover:shadow-md group"
-                    >
-                      <h4 className="font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-2">
-                        {getRelatedPostTitle(relatedPost)}
-                      </h4>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span>{formatDate(relatedPost.created_at)}</span>
-                        <span>•</span>
-                        <span>{getReadingTime(relatedPost.content)} min read</span>
-                      </div>
-                    </Link>
-                  ))}
                 </div>
               </div>
             )}

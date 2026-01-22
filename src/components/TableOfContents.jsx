@@ -16,7 +16,10 @@ function TableOfContents({ content }) {
       const trimmed = line.trim()
       if (trimmed.startsWith('#')) {
         const level = trimmed.match(/^#+/)[0].length
-        const text = trimmed.replace(/^#+\s*/, '').trim()
+        let text = trimmed.replace(/^#+\s*/, '').trim()
+        
+        // Убираем нумерацию в начале (1), 2), 3. и т.д.)
+        text = text.replace(/^\d+[\)\.]\s*/, '').trim()
         
         if (text && level <= 3) { // Только h1, h2, h3
           const id = `heading-${text.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-')}`
@@ -25,23 +28,36 @@ function TableOfContents({ content }) {
             text,
             level
           })
+          console.log('📋 Found heading:', { level, text, id })
         }
       }
     })
     
+    console.log('📚 Total headings found:', headingsArray.length)
     setHeadings(headingsArray)
   }, [content])
 
   useEffect(() => {
-    // Добавляем ID к заголовкам на странице
-    headings.forEach(({ id, text }) => {
-      const allHeadings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
-      allHeadings.forEach(heading => {
-        if (heading.textContent.trim() === text && !heading.id) {
-          heading.id = id
-        }
+    // Добавляем ID к заголовкам на странице более надежным способом
+    if (headings.length === 0) return
+    
+    const timer = setTimeout(() => {
+      headings.forEach(({ id, text }) => {
+        const allHeadings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
+        allHeadings.forEach(heading => {
+          // Нормализуем текст для сравнения
+          const headingText = heading.textContent.trim().replace(/^\d+[\)\.]\s*/, '')
+          const targetText = text.trim()
+          
+          if (headingText === targetText && !heading.id) {
+            heading.id = id
+            console.log('✅ Added ID to heading:', id, targetText)
+          }
+        })
       })
-    })
+    }, 500) // Даем время на рендеринг
+    
+    return () => clearTimeout(timer)
   }, [headings])
 
   useEffect(() => {
