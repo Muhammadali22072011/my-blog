@@ -405,8 +405,7 @@ function BlogPost() {
             </div>
           </header>
 
-          {/* Table of Contents */}
-          <TableOfContents content={post.content} />
+          {/* Table of Contents - убрано отсюда, перенесено в сайдбар */}
 
           {/* Post content */}
           <article className="prose prose-lg dark:prose-invert max-w-none">
@@ -515,6 +514,10 @@ function BlogPost() {
         {/* Sidebar */}
         <div className="hidden lg:block w-80 flex-shrink-0">
           <div className="sticky top-24 space-y-6">
+            {/* Table of Contents */}
+            <TableOfContents content={post.content} />
+            
+            {/* Related Posts Widget */}
             <RelatedPostsWidget 
               currentPostId={post.id} 
               category={post.category}

@@ -185,12 +185,12 @@ export const renderMarkdown = (text, options = {}) => {
         const hasHeader = tableRows.length > 1
         elements.push(
           <div key={`table-${elements.length}`} className="my-6 overflow-x-auto">
-            <table className="min-w-full border border-gray-300 rounded-lg shadow-sm">
+            <table className="min-w-full border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">
               {hasHeader && (
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     {tableRows[0].map((cell, index) => (
-                      <th key={index} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b border-gray-300">
+                      <th key={index} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700">
                         {processInlineMarkdown(cell)}
                       </th>
                     ))}
@@ -199,9 +199,9 @@ export const renderMarkdown = (text, options = {}) => {
               )}
               <tbody>
                 {(hasHeader ? tableRows.slice(1) : tableRows).map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                  <tr key={rowIndex} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} className="px-4 py-3 text-sm text-gray-700">
+                      <td key={cellIndex} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                         {processInlineMarkdown(cell)}
                       </td>
                     ))}
