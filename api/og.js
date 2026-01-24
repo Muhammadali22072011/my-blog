@@ -1,8 +1,6 @@
 // Vercel Edge Function для OG тегов
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmcHBraHdxbmxrcGplbW1vZXhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDAyNDcsImV4cCI6MjA3MTE3NjI0N30.KNDzI-PDysx7SJoFWtSqWyb5ZejTL1QVa5CwHw1IgFE'
 
 export const config = {
   runtime: 'edge',
@@ -17,16 +15,21 @@ export default async function handler(req) {
   }
 
   try {
-    // Получаем пост из Supabase
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    const { data: post, error } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('id', parseInt(postId))
-      .eq('status', 'published')
-      .single()
+    // Получаем пост из Supabase через fetch
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/posts?id=eq.${postId}&status=eq.published&select=*`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+      }
+    )
 
-    if (error || !post) {
+    const posts = await response.json()
+    const post = posts[0]
+
+    if (!post) {
       return new Response('Post not found', { status: 404 })
     }
 
@@ -61,18 +64,36 @@ export default async function handler(req) {
 
     // Формируем URL изображения
     const getImageUrl = (post) => {
+      console.log('Post featured_image:', post.featured_image)
+      console.log('Post og_image:', post.og_image)
+      
       if (post.featured_image) {
+        // Если уже полный URL
         if (post.featured_image.startsWith('http')) {
           return post.featured_image
         }
-        return `${supabaseUrl}/storage/v1/object/public/${post.featured_image}`
+        // Если путь начинается с images/
+        if (post.featured_image.startsWith('images/')) {
+          return `${supabaseUrl}/storage/v1/object/public/${post.featured_image}`
+        }
+        // Если путь начинается со слэша
+        if (post.featured_image.startsWith('/')) {
+          return `${supabaseUrl}/storage/v1/object/public${post.featured_image}`
+        }
+        // Иначе добавляем полный путь
+        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${post.featured_image}`
       }
+      
       if (post.og_image) {
         if (post.og_image.startsWith('http')) {
           return post.og_image
         }
-        return `${supabaseUrl}/storage/v1/object/public/${post.og_image}`
+        if (post.og_image.startsWith('images/')) {
+          return `${supabaseUrl}/storage/v1/object/public/${post.og_image}`
+        }
+        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${post.og_image}`
       }
+      
       return null
     }
 
@@ -80,6 +101,8 @@ export default async function handler(req) {
     const description = getDescription(post.content)
     const imageUrl = getImageUrl(post)
     const postUrl = `https://izzatullaev.uz/post/${postId}`
+    
+    console.log('Generated OG tags:', { title, description, imageUrl, postUrl })
 
     // Генерируем HTML с правильными OG тегами
     const html = `
