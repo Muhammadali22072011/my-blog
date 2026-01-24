@@ -1,22 +1,19 @@
 -- Добавляем SEO поля в таблицу posts
-ALTER TABLE posts 
-ADD COLUMN IF NOT EXISTS keywords TEXT[],
-ADD COLUMN IF NOT EXISTS meta_description TEXT,
-ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS seo_title TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS seo_description TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS seo_keywords TEXT[];
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS canonical_url TEXT;
 
--- Добавляем комментарии
-COMMENT ON COLUMN posts.keywords IS 'Массив ключевых слов для SEO';
-COMMENT ON COLUMN posts.meta_description IS 'Мета-описание для поисковиков (до 160 символов)';
-COMMENT ON COLUMN posts.slug IS 'SEO-дружественный URL (например: kak-uluchshit-seo)';
+-- Обновляем существующие посты с базовыми SEO данными
+UPDATE posts 
+SET 
+  seo_title = title,
+  seo_description = COALESCE(description, LEFT(content, 160)),
+  seo_keywords = ARRAY['Мухаммадали Иззатуллаев', 'IT блог', 'Навои', 'Узбекистан', 'программирование']
+WHERE seo_title IS NULL;
 
--- Создаем индекс для быстрого поиска по ключевым словам
-CREATE INDEX IF NOT EXISTS idx_posts_keywords ON posts USING GIN (keywords);
-
--- Создаем индекс для slug
-CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts (slug);
-
--- Проверяем результат
-SELECT column_name, data_type, is_nullable 
-FROM information_schema.columns 
-WHERE table_name = 'posts' 
-AND column_name IN ('keywords', 'meta_description', 'slug', 'og_image');
+-- Комментарий
+COMMENT ON COLUMN posts.seo_title IS 'SEO заголовок (50-60 символов)';
+COMMENT ON COLUMN posts.seo_description IS 'SEO описание (150-160 символов)';
+COMMENT ON COLUMN posts.seo_keywords IS 'Массив ключевых слов для SEO';
+COMMENT ON COLUMN posts.canonical_url IS 'Канонический URL страницы';

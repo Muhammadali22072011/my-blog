@@ -1,126 +1,197 @@
 import { useState } from 'react'
-import { downloadSitemap, downloadRobotsTxt } from '../utils/sitemapGenerator'
-import toast from 'react-hot-toast'
+import { generateSitemap, generateRobotsTxt } from '../utils/sitemapGenerator'
 
 function SEOTools({ posts }) {
-  const [showTools, setShowTools] = useState(false)
+  const [siteUrl, setSiteUrl] = useState('https://izzatullaev.uz')
+  const [showSitemap, setShowSitemap] = useState(false)
+  const [showRobots, setShowRobots] = useState(false)
 
-  const handleDownloadSitemap = () => {
-    try {
-      downloadSitemap(posts)
-      toast.success('sitemap.xml скачан!')
-    } catch (error) {
-      toast.error('Ошибка при создании sitemap')
-    }
+  const handleGenerateSitemap = () => {
+    const sitemap = generateSitemap(posts, siteUrl)
+    
+    // Создаем blob и скачиваем файл
+    const blob = new Blob([sitemap], { type: 'application/xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'sitemap.xml'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    setShowSitemap(true)
   }
 
-  const handleDownloadRobots = () => {
-    try {
-      downloadRobotsTxt()
-      toast.success('robots.txt скачан!')
-    } catch (error) {
-      toast.error('Ошибка при создании robots.txt')
-    }
+  const handleGenerateRobots = () => {
+    const robots = generateRobotsTxt(siteUrl)
+    
+    // Создаем blob и скачиваем файл
+    const blob = new Blob([robots], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'robots.txt'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    setShowRobots(true)
   }
 
-  const publishedPosts = posts.filter(p => p.status === 'published')
-  const totalWords = publishedPosts.reduce((sum, post) => {
-    return sum + (post.content ? post.content.split(/\s+/).length : 0)
-  }, 0)
+  const handleCopyToClipboard = (text, type) => {
+    navigator.clipboard.writeText(text)
+    alert(`${type} скопирован в буфер обмена!`)
+  }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          SEO Инструменты
-        </h3>
-        <button
-          onClick={() => setShowTools(!showTools)}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-        >
-          {showTools ? 'Скрыть' : 'Показать'}
-        </button>
+    <div className="space-y-6">
+      {/* Заголовок */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+        <h2 className="text-2xl font-bold mb-2">🚀 SEO Инструменты</h2>
+        <p className="text-blue-100">Генерация sitemap.xml и robots.txt для поисковых систем</p>
       </div>
 
-      {showTools && (
-        <div className="space-y-4">
-          {/* Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {publishedPosts.length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Опубликовано
-              </div>
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {totalWords.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Всего слов
-              </div>
-            </div>
-            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {Math.round(totalWords / Math.max(publishedPosts.length, 1))}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Средняя длина
-              </div>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {posts.filter(p => p.og_image).length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                С OG Image
-              </div>
+      {/* URL сайта */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          URL вашего сайта
+        </label>
+        <input
+          type="url"
+          value={siteUrl}
+          onChange={(e) => setSiteUrl(e.target.value)}
+          placeholder="https://izzatullaev.uz"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+        />
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Укажите полный URL вашего сайта (с https://)
+        </p>
+      </div>
+
+      {/* Кнопки генерации */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Sitemap */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center mb-4">
+            <div className="text-4xl mr-4">🗺️</div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sitemap.xml</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Карта сайта для Google/Yandex</p>
             </div>
           </div>
+          <button
+            onClick={handleGenerateSitemap}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Скачать sitemap.xml
+          </button>
+          {showSitemap && (
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                ✅ Sitemap сгенерирован! Загрузите файл в корень сайта.
+              </p>
+            </div>
+          )}
+        </div>
 
-          {/* Tools */}
-          <div className="space-y-2">
-            <button
-              onClick={handleDownloadSitemap}
-              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Скачать sitemap.xml
-            </button>
-
-            <button
-              onClick={handleDownloadRobots}
-              className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Скачать robots.txt
-            </button>
+        {/* Robots.txt */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center mb-4">
+            <div className="text-4xl mr-4">🤖</div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Robots.txt</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Правила для поисковых роботов</p>
+            </div>
           </div>
+          <button
+            onClick={handleGenerateRobots}
+            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          >
+            Скачать robots.txt
+          </button>
+          {showRobots && (
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                ✅ Robots.txt сгенерирован! Загрузите файл в корень сайта.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
-          {/* Tips */}
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-400 mb-2 flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Совет:
-            </h4>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              После скачивания разместите sitemap.xml и robots.txt в корне вашего сайта. 
-              Затем добавьте sitemap в Google Search Console и Yandex Webmaster.
-            </p>
+      {/* Инструкция */}
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-yellow-900 dark:text-yellow-200 mb-3">📋 Инструкция</h3>
+        <ol className="space-y-2 text-sm text-yellow-800 dark:text-yellow-300">
+          <li>1. Скачайте sitemap.xml и robots.txt</li>
+          <li>2. Загрузите их в корневую папку вашего сайта (public/)</li>
+          <li>3. Проверьте доступность: {siteUrl}/sitemap.xml</li>
+          <li>4. Зарегистрируйте сайт в Google Search Console</li>
+          <li>5. Добавьте sitemap в Search Console</li>
+          <li>6. Зарегистрируйте сайт в Yandex Webmaster</li>
+          <li>7. Добавьте sitemap в Yandex Webmaster</li>
+        </ol>
+      </div>
+
+      {/* Статистика */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">📊 Статистика</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{posts.length}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Всего постов</div>
+          </div>
+          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              {posts.filter(p => p.status === 'published').length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Опубликовано</div>
+          </div>
+          <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+              {new Set(posts.map(p => p.category)).size}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Категорий</div>
+          </div>
+          <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+              {posts.reduce((sum, p) => sum + (p.views || 0), 0)}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Просмотров</div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Ключевые слова для SEO */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">🔑 Рекомендуемые ключевые слова</h3>
+        <div className="flex flex-wrap gap-2">
+          {[
+            'Мухаммадали Иззатуллаев',
+            'IT блог Навои',
+            'Программирование Узбекистан',
+            'Frontend разработка',
+            'React JavaScript',
+            'Веб-разработка',
+            'IT обучение',
+            'Навои Узбекистан',
+            'Разработчик',
+            'Coding tutorial'
+          ].map((keyword, index) => (
+            <span
+              key={index}
+              className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+            >
+              {keyword}
+            </span>
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          Используйте эти ключевые слова в заголовках и описаниях ваших постов
+        </p>
+      </div>
     </div>
   )
 }
