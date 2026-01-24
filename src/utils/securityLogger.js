@@ -34,15 +34,11 @@ export const SecurityAction = {
   WARNING: 'warning'
 }
 
-// Получение IP адреса пользователя
+// Получение IP адреса пользователя (упрощенная версия без внешних API)
 const getUserIP = async () => {
-  try {
-    const response = await fetch('https://api.ipify.org?format=json')
-    const data = await response.json()
-    return data.ip
-  } catch (error) {
-    return 'unknown'
-  }
+  // Не используем внешние API для избежания CORS ошибок
+  // IP будет определяться на сервере через Supabase Edge Functions если нужно
+  return 'client-side'
 }
 
 // Получение User Agent
