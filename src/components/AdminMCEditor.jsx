@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { translations } from '../translations'
 import supabaseService from '../services/SupabaseService'
 import MediaInsertMenu from './MediaInsertMenu'
+import ColorPicker from './ColorPicker'
 import { renderMarkdown } from '../utils/markdownRenderer.jsx'
 
 function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
@@ -492,6 +493,9 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
             >
               📄
             </button>
+            
+            {/* Color Picker */}
+            <ColorPicker onInsert={insertText} />
           </div>
 
           {/* Lists */}
