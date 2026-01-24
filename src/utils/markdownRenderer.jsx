@@ -436,6 +436,18 @@ export const processInlineMarkdown = (text) => {
     })
   }
 
+  // HTML span теги (для цветного текста)
+  const spanRegex = /<span\s+style="([^"]+)">([^<]+)<\/span>/g
+  while ((match = spanRegex.exec(text)) !== null) {
+    patterns.push({
+      type: 'span',
+      start: match.index,
+      end: match.index + match[0].length,
+      style: match[1],
+      content: match[2]
+    })
+  }
+
   // Сортируем по позиции
   patterns.sort((a, b) => a.start - b.start)
 
@@ -467,6 +479,23 @@ export const processInlineMarkdown = (text) => {
           <code key={`code-${index}`} className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
             {pattern.content}
           </code>
+        )
+        break
+      case 'span':
+        // Парсим style строку в объект
+        const styleObj = {}
+        pattern.style.split(';').forEach(rule => {
+          const [prop, value] = rule.split(':').map(s => s.trim())
+          if (prop && value) {
+            // Конвертируем CSS свойства в camelCase для React
+            const camelProp = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            styleObj[camelProp] = value
+          }
+        })
+        elements.push(
+          <span key={`span-${index}`} style={styleObj}>
+            {pattern.content}
+          </span>
         )
         break
     }
