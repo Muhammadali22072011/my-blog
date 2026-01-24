@@ -24,8 +24,8 @@ function BulkSEO({ posts, onUpdatePost }) {
       const post = posts[i]
       
       try {
-        // Извлекаем ключевые слова
-        const keywords = extractKeywords(post.content, 10)
+        // Извлекаем БОЛЬШЕ ключевых слов (50 вместо 10)
+        const keywords = extractKeywords(post.content, 50)
         
         // Генерируем мета-описание
         const metaDescription = generateMetaDescription(post.content, 160)
@@ -36,12 +36,26 @@ function BulkSEO({ posts, onUpdatePost }) {
           seoTitle = seoTitle.substring(0, 57) + '...'
         }
         
-        // Добавляем ключевые слова
+        // Добавляем МАКСИМУМ ключевых слов
         const enhancedKeywords = [
           'Мухаммадали Иззатуллаев',
+          'Muhammadali Izzatullaev',
           'IT блог',
           'Навои Узбекистан',
+          'Navoiy Uzbekistan',
           'программирование',
+          'разработка',
+          'frontend',
+          'backend',
+          'JavaScript',
+          'React',
+          'Node.js',
+          'веб-разработка',
+          'web development',
+          'coding',
+          'IT Узбекистан',
+          'developer',
+          'программист',
           ...keywords
         ]
         

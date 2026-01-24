@@ -8,8 +8,8 @@ import { extractKeywords, generateMetaDescription } from './seoKeywordExtractor'
  */
 export const generateAutoSEO = (post) => {
   try {
-    // Извлекаем ключевые слова из контента
-    const keywords = extractKeywords(post.content || '', 10)
+    // Извлекаем БОЛЬШЕ ключевых слов из контента (50 вместо 10)
+    const keywords = extractKeywords(post.content || '', 50)
     
     // Генерируем мета-описание
     const metaDescription = generateMetaDescription(
@@ -23,17 +23,151 @@ export const generateAutoSEO = (post) => {
       seoTitle = seoTitle.substring(0, 57) + '...'
     }
     
-    // Добавляем важные ключевые слова для Узбекистана и IT
+    // МАКСИМАЛЬНЫЙ список ключевых слов для SEO
     const enhancedKeywords = [
+      // Основные ключевые слова
       'Мухаммадали Иззатуллаев',
-      'IT блог',
+      'Muhammadali Izzatullaev',
+      'Muhammad Ali Izzatullaev',
+      
+      // Локация
+      'IT блог Навои',
       'Навои Узбекистан',
+      'Navoiy Uzbekistan',
+      'IT Navoiy',
+      'Навоий',
+      'Zarafshan',
+      'Зарафшан',
+      
+      // Программирование общее
       'программирование',
+      'разработка',
+      'coding',
+      'programming',
+      'software development',
+      'веб-разработка',
+      'web development',
+      
+      // Frontend
+      'frontend',
+      'фронтенд',
+      'frontend developer',
+      'фронтенд разработчик',
+      'HTML',
+      'CSS',
+      'JavaScript',
+      'TypeScript',
+      'React',
+      'React.js',
+      'Vue',
+      'Vue.js',
+      'Angular',
+      'Next.js',
+      'Nuxt.js',
+      'Svelte',
+      
+      // Backend
+      'backend',
+      'бэкенд',
+      'Node.js',
+      'Express',
+      'Python',
+      'Django',
+      'Flask',
+      'PHP',
+      'Laravel',
+      
+      // Базы данных
+      'database',
+      'база данных',
+      'SQL',
+      'PostgreSQL',
+      'MySQL',
+      'MongoDB',
+      'Supabase',
+      'Firebase',
+      
+      // Инструменты
+      'Git',
+      'GitHub',
+      'VS Code',
+      'Docker',
+      'API',
+      'REST API',
+      'GraphQL',
+      
+      // Темы
+      'tutorial',
+      'туториал',
+      'обучение',
+      'курс',
+      'гайд',
+      'guide',
+      'how to',
+      'как сделать',
+      'tips',
+      'советы',
+      'best practices',
+      'лучшие практики',
+      
+      // IT общее
+      'IT специалист',
+      'IT professional',
+      'software engineer',
+      'инженер программист',
+      'developer',
+      'разработчик',
+      'programmer',
+      'программист',
+      
+      // Узбекистан IT
+      'IT Узбекистан',
+      'IT Uzbekistan',
+      'Uzbek developer',
+      'узбекский программист',
+      'Central Asia IT',
+      'Центральная Азия IT',
+      
+      // Образование
+      'IT образование',
+      'IT education',
+      'learn programming',
+      'изучение программирования',
+      'coding bootcamp',
+      'онлайн курсы',
+      'online courses',
+      
+      // Технологии
+      'tech blog',
+      'технологии',
+      'technology',
+      'innovation',
+      'инновации',
+      'AI',
+      'machine learning',
+      'искусственный интеллект',
+      
+      // Карьера
+      'IT карьера',
+      'IT career',
+      'junior developer',
+      'senior developer',
+      'tech jobs',
+      'вакансии IT',
+      
+      // Проекты
+      'pet project',
+      'portfolio',
+      'портфолио',
+      'open source',
+      'GitHub projects',
+      
+      // Дополнительные из контента
       ...keywords
     ]
     
-    // Убираем дубликаты
-    const uniqueKeywords = [...new Set(enhancedKeywords)]
+    // Убираем дубликаты и пустые значения
+    const uniqueKeywords = [...new Set(enhancedKeywords.filter(k => k && k.trim()))]
     
     return {
       seo_title: seoTitle,

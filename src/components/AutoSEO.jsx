@@ -11,8 +11,8 @@ function AutoSEO({ post, onUpdate }) {
     setIsProcessing(true)
     
     try {
-      // Извлекаем ключевые слова
-      const keywords = extractKeywords(post.content, 10)
+      // Извлекаем БОЛЬШЕ ключевых слов (50 вместо 10)
+      const keywords = extractKeywords(post.content, 50)
       
       // Генерируем мета-описание
       const metaDescription = generateMetaDescription(post.content, 160)
@@ -23,12 +23,26 @@ function AutoSEO({ post, onUpdate }) {
         seoTitle = seoTitle.substring(0, 57) + '...'
       }
       
-      // Добавляем ключевые слова для Узбекистана и IT
+      // Добавляем МАКСИМУМ ключевых слов для Узбекистана и IT
       const enhancedKeywords = [
         'Мухаммадали Иззатуллаев',
+        'Muhammadali Izzatullaev',
         'IT блог',
         'Навои Узбекистан',
+        'Navoiy Uzbekistan',
         'программирование',
+        'разработка',
+        'frontend',
+        'backend',
+        'JavaScript',
+        'React',
+        'Node.js',
+        'веб-разработка',
+        'web development',
+        'coding',
+        'IT Узбекистан',
+        'developer',
+        'программист',
         ...keywords
       ]
       

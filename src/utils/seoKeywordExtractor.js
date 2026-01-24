@@ -22,7 +22,7 @@ const STOP_WORDS = new Set([
 ])
 
 // Извлечение ключевых слов из текста
-export const extractKeywords = (text, maxKeywords = 10) => {
+export const extractKeywords = (text, maxKeywords = 50) => {
   if (!text) return []
 
   // Очищаем текст от markdown и HTML
@@ -34,7 +34,7 @@ export const extractKeywords = (text, maxKeywords = 10) => {
   // Разбиваем на слова
   const words = cleanText
     .split(/\s+/)
-    .filter(word => word.length > 3) // Минимум 4 символа
+    .filter(word => word.length > 2) // Минимум 3 символа (было 4)
     .filter(word => !STOP_WORDS.has(word))
     .filter(word => /^[a-zа-яё]+$/i.test(word)) // Только буквы
 
