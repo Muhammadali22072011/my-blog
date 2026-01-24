@@ -1075,6 +1075,62 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
                 </div>
               </div>
 
+              {/* Цветной текст */}
+              <div>
+                <h4 className="text-lg font-bold text-gray-900 mb-3">🎨 Цветной текст</h4>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                  <div>
+                    <p className="font-bold mb-2">Использование кнопки 🎨 Цвет:</p>
+                    <ol className="list-decimal ml-6 space-y-1 text-sm">
+                      <li>Нажмите кнопку "🎨 Цвет" в панели инструментов</li>
+                      <li>Выберите готовый цвет или введите свой (HEX/RGB)</li>
+                      <li>Вставится код: <code className="bg-white px-2 py-1 rounded">&lt;span style="color: #ff0000"&gt;текст&lt;/span&gt;</code></li>
+                      <li>Замените "текст" на ваш текст</li>
+                    </ol>
+                  </div>
+                  
+                  <div>
+                    <p className="font-bold mb-2">Примеры:</p>
+                    <div className="space-y-2">
+                      <div>
+                        <code className="block bg-white p-2 rounded border text-sm">
+                          &lt;span style="color: #ef4444"&gt;красный текст&lt;/span&gt;
+                        </code>
+                        <p className="text-sm mt-1">Результат: <span style={{color: '#ef4444'}}>красный текст</span></p>
+                      </div>
+                      <div>
+                        <code className="block bg-white p-2 rounded border text-sm">
+                          &lt;span style="background: #fef08a; padding: 2px 4px"&gt;желтый фон&lt;/span&gt;
+                        </code>
+                        <p className="text-sm mt-1">Результат: <span style={{background: '#fef08a', padding: '2px 4px'}}>желтый фон</span></p>
+                      </div>
+                      <div>
+                        <code className="block bg-white p-2 rounded border text-sm">
+                          &lt;span style="color: rgb(59, 130, 246)"&gt;синий RGB&lt;/span&gt;
+                        </code>
+                        <p className="text-sm mt-1">Результат: <span style={{color: 'rgb(59, 130, 246)'}}>синий RGB</span></p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-bold mb-2">Форматы цветов:</p>
+                    <ul className="list-disc ml-6 space-y-1 text-sm">
+                      <li><strong>HEX:</strong> #ff0000, #00ff00, #0000ff</li>
+                      <li><strong>RGB:</strong> rgb(255, 0, 0)</li>
+                      <li><strong>RGBA:</strong> rgba(255, 0, 0, 0.5) - с прозрачностью</li>
+                      <li><strong>Названия:</strong> red, blue, green, orange</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      <strong>💡 Совет:</strong> Цветной текст отображается везде: в постах, ленте, поиске и превью!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Работа с файлами */}
               <div>
                 <h4 className="text-lg font-bold text-gray-900 mb-3">📁 Работа с файлами</h4>
