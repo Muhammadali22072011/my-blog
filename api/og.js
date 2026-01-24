@@ -1,73 +1,52 @@
-// Vercel Serverless Function для генерации OG мета-тегов
-export default async function handler(req, res) {
-  const { postId } = req.query;
-  
+// Vercel Edge Function для OG тегов
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+
+export const config = {
+  runtime: 'edge',
+}
+
+export default async function handler(req) {
+  const url = new URL(req.url)
+  const postId = url.searchParams.get('postId')
+
   if (!postId) {
-    return res.status(400).json({ error: 'postId is required' });
+    return new Response('Missing postId', { status: 400 })
   }
-  
+
   try {
-    // Получаем данные поста из Supabase
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-    
-    const response = await fetch(`${supabaseUrl}/rest/v1/posts?id=eq.${postId}&select=*`, {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`
-      }
-    });
-    
-    const posts = await response.json();
-    const post = posts[0];
-    
-    if (!post) {
-      return res.status(404).json({ error: 'Post not found' });
+    // Получаем пост из Supabase
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const { data: post, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', parseInt(postId))
+      .eq('status', 'published')
+      .single()
+
+    if (error || !post) {
+      return new Response('Post not found', { status: 404 })
     }
-    
-    // Извлекаем первое изображение из контента
-    let ogImage = post.featured_image || post.og_image;
-    
-    if (!ogImage && post.content) {
-      // Ищем HTML изображение
-      const htmlImgMatch = post.content.match(/<img[^>]+src=["']([^"']+)["']/i);
-      if (htmlImgMatch) {
-        ogImage = htmlImgMatch[1];
-      } else {
-        // Ищем markdown изображение
-        const mdImgMatch = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-        if (mdImgMatch) {
-          ogImage = mdImgMatch[2];
-        }
-      }
-      
-      // Если URL относительный, добавляем базовый URL
-      if (ogImage && !ogImage.startsWith('http')) {
-        ogImage = `${supabaseUrl}/storage/v1/object/public/${ogImage}`;
-      }
-    } else if (ogImage && !ogImage.startsWith('http')) {
-      // Преобразуем featured_image в полный URL
-      ogImage = `${supabaseUrl}/storage/v1/object/public/${ogImage}`;
-    }
-    
-    // Извлекаем заголовок
-    let title = 'Untitled Post';
-    if (post.content) {
-      const lines = post.content.split('\n');
+
+    // Извлекаем заголовок из контента
+    const getTitle = (content) => {
+      if (!content) return 'Untitled Post'
+      const lines = content.split('\n')
       for (const line of lines) {
-        const trimmed = line.trim();
+        const trimmed = line.trim()
         if (trimmed.startsWith('# ')) {
-          title = trimmed.substring(2);
-          break;
+          return trimmed.substring(2)
         }
       }
+      return 'Untitled Post'
     }
-    
-    // Генерируем excerpt
-    let description = post.excerpt || '';
-    if (!description && post.content) {
-      // Удаляем markdown форматирование
-      const plainText = post.content
+
+    // Извлекаем описание
+    const getDescription = (content) => {
+      if (!content) return 'Read this blog post'
+      const plainText = content
         .replace(/^#+ .*/gm, '')
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/\*(.*?)\*/g, '$1')
@@ -76,57 +55,88 @@ export default async function handler(req, res) {
         .replace(/>\s.*/g, '')
         .replace(/- .*/g, '')
         .replace(/\n+/g, ' ')
-        .trim();
-      
-      if (plainText && plainText.length >= 10) {
-        description = plainText.length > 160 ? plainText.substring(0, 160) + '...' : plainText;
-      } else {
-        description = title + ' - Read more on Muhammadali Blog';
+        .trim()
+      return plainText.length <= 160 ? plainText : plainText.substring(0, 160) + '...'
+    }
+
+    // Формируем URL изображения
+    const getImageUrl = (post) => {
+      if (post.featured_image) {
+        if (post.featured_image.startsWith('http')) {
+          return post.featured_image
+        }
+        return `${supabaseUrl}/storage/v1/object/public/${post.featured_image}`
       }
+      if (post.og_image) {
+        if (post.og_image.startsWith('http')) {
+          return post.og_image
+        }
+        return `${supabaseUrl}/storage/v1/object/public/${post.og_image}`
+      }
+      return null
     }
-    
-    if (!description) {
-      description = title + ' - Read more on Muhammadali Blog';
-    }
-    
-    // Генерируем HTML с OG мета-тегами
-    const html = `<!DOCTYPE html>
-<html lang="en">
+
+    const title = getTitle(post.content)
+    const description = getDescription(post.content)
+    const imageUrl = getImageUrl(post)
+    const postUrl = `https://izzatullaev.uz/post/${postId}`
+
+    // Генерируем HTML с правильными OG тегами
+    const html = `
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} | Muhammadali Blog</title>
-    
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="https://izzatullaev.uz/post/${postId}">
-    <meta property="og:title" content="${title}">
-    <meta property="og:description" content="${description}">
-    ${ogImage ? `<meta property="og:image" content="${ogImage}">` : ''}
-    ${ogImage ? `<meta property="og:image:width" content="1200">` : ''}
-    ${ogImage ? `<meta property="og:image:height" content="630">` : ''}
-    <meta property="og:site_name" content="Muhammadali Blog">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${title}">
-    <meta name="twitter:description" content="${description}">
-    ${ogImage ? `<meta name="twitter:image" content="${ogImage}">` : ''}
-    
-    <!-- Redirect to React app -->
-    <meta http-equiv="refresh" content="0;url=https://izzatullaev.uz/post/${postId}">
-    <script>window.location.href = 'https://izzatullaev.uz/post/${postId}';</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title} | Muhammadali Blog</title>
+  
+  <!-- Basic Meta Tags -->
+  <meta name="description" content="${description}">
+  <meta name="author" content="Muhammadali">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="${postUrl}">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:site_name" content="Muhammadali Blog">
+  <meta property="og:locale" content="ru_RU">
+  ${imageUrl ? `
+  <meta property="og:image" content="${imageUrl}">
+  <meta property="og:image:secure_url" content="${imageUrl}">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${title}">
+  ` : ''}
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="${postUrl}">
+  <meta name="twitter:title" content="${title}">
+  <meta name="twitter:description" content="${description}">
+  ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}">` : ''}
+  
+  <!-- Redirect to actual page -->
+  <meta http-equiv="refresh" content="0;url=${postUrl}">
+  <script>window.location.href = "${postUrl}";</script>
 </head>
 <body>
-    <p>Redirecting to <a href="https://izzatullaev.uz/post/${postId}">${title}</a>...</p>
+  <h1>${title}</h1>
+  <p>${description}</p>
+  <p>Redirecting to <a href="${postUrl}">${postUrl}</a>...</p>
 </body>
-</html>`;
-    
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(html);
-    
+</html>
+`
+
+    return new Response(html, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      },
+    })
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error:', error)
+    return new Response('Internal Server Error', { status: 500 })
   }
 }
