@@ -11,9 +11,19 @@ function SEOHead({
   modifiedTime,
   tags = []
 }) {
+  // Функция для очистки HTML тегов из текста
+  const stripHtml = (html) => {
+    if (!html) return ''
+    // Убираем все HTML теги
+    return html.replace(/<[^>]*>/g, '')
+  }
+
   useEffect(() => {
     // Update document title
     document.title = title ? `${title} | Muhammadali Blog` : 'Muhammadali Blog'
+
+    // Очищаем description от HTML тегов для превью
+    const cleanDescription = stripHtml(description)
 
     // Helper to update or create meta tag
     const setMeta = (name, content, property = false) => {
@@ -28,16 +38,16 @@ function SEOHead({
       meta.setAttribute('content', content)
     }
 
-    // Basic meta tags
-    setMeta('description', description)
+    // Basic meta tags (используем очищенное описание)
+    setMeta('description', cleanDescription)
     setMeta('author', author)
     if (tags.length > 0) {
       setMeta('keywords', tags.join(', '))
     }
 
-    // Open Graph tags
+    // Open Graph tags (используем очищенное описание)
     setMeta('og:title', title, true)
-    setMeta('og:description', description, true)
+    setMeta('og:description', cleanDescription, true)
     setMeta('og:type', type, true)
     setMeta('og:url', url || window.location.href, true)
     if (image) {
@@ -53,10 +63,10 @@ function SEOHead({
     setMeta('og:site_name', 'Muhammadali Blog', true)
     setMeta('og:locale', 'ru_RU', true)
 
-    // Twitter Card tags
+    // Twitter Card tags (используем очищенное описание)
     setMeta('twitter:card', image ? 'summary_large_image' : 'summary')
     setMeta('twitter:title', title)
-    setMeta('twitter:description', description)
+    setMeta('twitter:description', cleanDescription)
     if (image) {
       const absoluteImageUrl = image.startsWith('http') ? image : `${window.location.origin}${image}`
       setMeta('twitter:image', absoluteImageUrl)
