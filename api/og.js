@@ -50,6 +50,8 @@ export default async function handler(req) {
     const getDescription = (content) => {
       if (!content) return 'Read this blog post'
       const plainText = content
+        // Удаляем HTML теги (включая <span>, <strong>, <em> и т.д.)
+        .replace(/<[^>]*>/g, '')
         .replace(/^#+ .*/gm, '')
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/\*(.*?)\*/g, '$1')
@@ -58,6 +60,8 @@ export default async function handler(req) {
         .replace(/>\s.*/g, '')
         .replace(/- .*/g, '')
         .replace(/\n+/g, ' ')
+        // Удаляем множественные пробелы
+        .replace(/\s+/g, ' ')
         .trim()
       return plainText.length <= 160 ? plainText : plainText.substring(0, 160) + '...'
     }
@@ -66,7 +70,7 @@ export default async function handler(req) {
     const getImageUrl = (post) => {
       console.log('Post featured_image:', post.featured_image)
       console.log('Post og_image:', post.og_image)
-      
+
       if (post.featured_image) {
         // Если уже полный URL
         if (post.featured_image.startsWith('http')) {
@@ -83,7 +87,7 @@ export default async function handler(req) {
         // Иначе добавляем полный путь
         return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${post.featured_image}`
       }
-      
+
       if (post.og_image) {
         if (post.og_image.startsWith('http')) {
           return post.og_image
@@ -93,7 +97,7 @@ export default async function handler(req) {
         }
         return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${post.og_image}`
       }
-      
+
       return null
     }
 
@@ -101,7 +105,7 @@ export default async function handler(req) {
     const description = getDescription(post.content)
     const imageUrl = getImageUrl(post)
     const postUrl = `https://izzatullaev.uz/post/${postId}`
-    
+
     console.log('Generated OG tags:', { title, description, imageUrl, postUrl })
 
     // Генерируем HTML с правильными OG тегами

@@ -50,20 +50,20 @@ function BlogPost() {
         setPostError('Invalid post ID')
         return
       }
-      
+
       const parsedId = parseInt(id)
-      
+
       // Всегда загружаем пост напрямую из базы данных для гарантии актуальности
       setPostLoading(true)
       setPostError(null)
-      
+
       try {
         const { data, error } = await supabase
           .from('posts')
           .select('*')
           .eq('id', parsedId)
           .single()
-        
+
         if (error) {
           setPostError(error.message)
         } else if (data) {
@@ -99,7 +99,7 @@ function BlogPost() {
             <div className="mb-8 pt-12">
               <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
             </div>
-            
+
             {/* Title skeleton */}
             <div className="mb-6">
               <div className="h-10 w-3/4 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-4"></div>
@@ -109,10 +109,10 @@ function BlogPost() {
                 <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
               </div>
             </div>
-            
+
             {/* Featured image skeleton */}
             <div className="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse mb-8"></div>
-            
+
             {/* Content skeleton */}
             <div className="space-y-3">
               <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
@@ -122,7 +122,7 @@ function BlogPost() {
               <div className="h-4 w-4/5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
             </div>
           </div>
-          
+
           {/* Sidebar Skeleton */}
           <div className="hidden lg:block w-80 flex-shrink-0">
             <div className="sticky top-24 space-y-6">
@@ -135,7 +135,7 @@ function BlogPost() {
                   <div className="h-3 w-4/5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
               </div>
-              
+
               {/* Related posts skeleton */}
               <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
                 <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3"></div>
@@ -205,7 +205,7 @@ function BlogPost() {
     const lines = content.split('\n')
     const filteredLines = []
     let foundMainTitle = false
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       const trimmed = line.trim()
@@ -230,6 +230,8 @@ function BlogPost() {
   const getExcerpt = (content, maxLength = 160) => {
     if (!content) return 'Read this blog post on Muhammadali Blog'
     const plainText = content
+      // Удаляем HTML теги (включая <span>, <strong>, <em> и т.д.)
+      .replace(/<[^>]*>/g, '')
       .replace(/^#+ .*/gm, '')
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/\*(.*?)\*/g, '$1')
@@ -238,8 +240,10 @@ function BlogPost() {
       .replace(/>\s.*/g, '')
       .replace(/- .*/g, '')
       .replace(/\n+/g, ' ')
+      // Удаляем множественные пробелы
+      .replace(/\s+/g, ' ')
       .trim()
-    
+
     // Если после удаления заголовков ничего не осталось, используем заголовок
     if (!plainText || plainText.length < 10) {
       const lines = content.split('\n')
@@ -251,7 +255,7 @@ function BlogPost() {
       }
       return 'Read this blog post on Muhammadali Blog'
     }
-    
+
     return plainText.length <= maxLength ? plainText : plainText.substring(0, maxLength).trim() + '...'
   }
 
@@ -312,11 +316,11 @@ function BlogPost() {
 
   const postTitle = getPostTitle()
   const keywords = extractKeywords(post.content, 15)
-  
+
   // Извлекаем первое изображение из контента для OG image
   const getFirstImage = (content) => {
     if (!content) return null
-    
+
     // Ищем HTML изображение
     const htmlImgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i)
     if (htmlImgMatch) {
@@ -330,7 +334,7 @@ function BlogPost() {
       }
       return src
     }
-    
+
     // Ищем markdown изображение
     const mdImgMatch = content.match(/!\[([^\]]*)\]\(([^)]+)\)/)
     if (mdImgMatch) {
@@ -342,34 +346,34 @@ function BlogPost() {
       }
       return src
     }
-    
+
     return null
   }
-  
+
   // Преобразуем featured_image в полный URL если нужно
   const getFullImageUrl = (imageUrl) => {
     if (!imageUrl) return null
     if (imageUrl.startsWith('http')) return imageUrl
-    
+
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-    
+
     // Если путь уже содержит storage/v1/object/public, не дублируем
     if (imageUrl.includes('storage/v1/object/public')) {
       return `${supabaseUrl}/${imageUrl.replace(/^\/+/, '')}`
     }
-    
+
     // Если путь начинается с images/, это bucket путь
     if (imageUrl.startsWith('images/')) {
       return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
     }
-    
+
     // Иначе предполагаем что это полный путь от storage
     return `${supabaseUrl}/storage/v1/object/public/${imageUrl.replace(/^\/+/, '')}`
   }
-  
+
   // Приоритет: featured_image > og_image > первое изображение из контента
   const ogImage = getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image) || getFirstImage(post.content)
-  
+
   // Логируем для отладки
   console.log('🖼️ Post OG Image:', {
     featured_image: post.featured_image,
@@ -390,7 +394,7 @@ function BlogPost() {
         modifiedTime={post.updated_at}
         tags={post.tags || [post.category].filter(Boolean)}
       />
-      
+
       {/* SEO Keywords & Structured Data */}
       <SEOKeywords
         keywords={keywords}
@@ -412,7 +416,7 @@ function BlogPost() {
 
       {/* Reading Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 z-50">
-        <div 
+        <div
           className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-150"
           style={{ width: `${readingProgress}%` }}
         />
@@ -423,8 +427,8 @@ function BlogPost() {
         <div className="flex-1 max-w-4xl">
           {/* Back navigation */}
           <div className="mb-6 sm:mb-8 pt-8 sm:pt-12 flex items-center justify-between gap-2">
-            <Link 
-              to="/blogs" 
+            <Link
+              to="/blogs"
               className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium transition-colors inline-flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
             >
               <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -442,11 +446,11 @@ function BlogPost() {
           {/* Post header */}
           <header className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white leading-tight mb-4">{postTitle}</h1>
-            
+
             {/* Featured Image */}
             {ogImage && (
               <div className="w-full rounded-xl overflow-hidden mb-6">
-                <img 
+                <img
                   src={ogImage}
                   alt={postTitle}
                   className="w-full h-auto object-cover"
@@ -455,7 +459,7 @@ function BlogPost() {
                 />
               </div>
             )}
-            
+
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400 text-sm">
               <span>{formatDate(post.created_at)}</span>
               <span>•</span>
@@ -502,8 +506,8 @@ function BlogPost() {
 
           {/* Social Share */}
           <div className="mt-8">
-            <SocialShare 
-              url={window.location.href} 
+            <SocialShare
+              url={window.location.href}
               title={postTitle}
               description={getExcerpt(post.content)}
             />
@@ -531,7 +535,7 @@ function BlogPost() {
                       </h4>
                     </Link>
                   ) : <div></div>}
-                  
+
                   {nextPost ? (
                     <Link
                       to={`/post/${nextPost.id}`}
@@ -562,17 +566,17 @@ function BlogPost() {
           <div className="sticky top-24 space-y-6">
             {/* Table of Contents */}
             <TableOfContents content={post.content} />
-            
+
             {/* Related Posts Widget */}
-            <RelatedPostsWidget 
-              currentPostId={post.id} 
+            <RelatedPostsWidget
+              currentPostId={post.id}
               category={post.category}
               tags={post.tags || []}
             />
           </div>
         </div>
       </div>
-      
+
       {/* Back to top button */}
       <div className={`fixed bottom-8 right-8 transition-all duration-300 z-40 ${showBackToTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
         <button
