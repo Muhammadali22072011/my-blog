@@ -94,7 +94,8 @@ function Layout() {
         </div>
       </footer>
       
-      <NewPostNotification newPost={newPost} />
+      {/* Уведомление о новых постах отключено */}
+      {/* <NewPostNotification newPost={newPost} /> */}
     </div>
   )
 }
