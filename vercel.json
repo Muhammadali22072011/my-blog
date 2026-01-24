@@ -4,17 +4,6 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/post/:id",
-      "destination": "/api/og?postId=:id",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(bot|crawler|spider|crawling|facebookexternalhit|twitterbot|whatsapp|telegram).*"
-        }
-      ]
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
