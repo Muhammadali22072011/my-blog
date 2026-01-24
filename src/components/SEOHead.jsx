@@ -50,18 +50,29 @@ function SEOHead({
     setMeta('og:description', cleanDescription, true)
     setMeta('og:type', type, true)
     setMeta('og:url', url || window.location.href, true)
-    if (image) {
-      // Убедимся что URL абсолютный
-      const absoluteImageUrl = image.startsWith('http') ? image : `${window.location.origin}${image}`
-      setMeta('og:image', absoluteImageUrl, true)
-      setMeta('og:image:secure_url', absoluteImageUrl, true)
-      setMeta('og:image:width', '1200', true)
-      setMeta('og:image:height', '630', true)
-      setMeta('og:image:type', 'image/png', true)
-      setMeta('og:image:alt', title, true)
-    }
     setMeta('og:site_name', 'Muhammadali Blog', true)
     setMeta('og:locale', 'ru_RU', true)
+    
+    // OG Image - КРИТИЧНО для Telegram
+    if (image) {
+      // Убедимся что URL абсолютный и правильный
+      let absoluteImageUrl = image
+      if (!image.startsWith('http')) {
+        absoluteImageUrl = `${window.location.origin}${image}`
+      }
+      
+      // Telegram требует эти теги в правильном порядке
+      setMeta('og:image', absoluteImageUrl, true)
+      setMeta('og:image:secure_url', absoluteImageUrl, true)
+      setMeta('og:image:type', 'image/jpeg', true)
+      setMeta('og:image:width', '1200', true)
+      setMeta('og:image:height', '630', true)
+      setMeta('og:image:alt', title, true)
+      
+      console.log('🖼️ OG Image set for Telegram:', absoluteImageUrl)
+    } else {
+      console.warn('⚠️ No OG image provided - Telegram preview will not show image')
+    }
 
     // Twitter Card tags (используем очищенное описание)
     setMeta('twitter:card', image ? 'summary_large_image' : 'summary')

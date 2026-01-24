@@ -324,7 +324,9 @@ function BlogPost() {
       // Если URL относительный, добавляем базовый URL
       if (!src.startsWith('http')) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${src}`
+        // Убираем лишние слэши
+        const cleanSrc = src.replace(/^\/+/, '')
+        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${cleanSrc}`
       }
       return src
     }
@@ -335,7 +337,8 @@ function BlogPost() {
       const src = mdImgMatch[2]
       if (!src.startsWith('http')) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${src}`
+        const cleanSrc = src.replace(/^\/+/, '')
+        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${cleanSrc}`
       }
       return src
     }
@@ -347,11 +350,32 @@ function BlogPost() {
   const getFullImageUrl = (imageUrl) => {
     if (!imageUrl) return null
     if (imageUrl.startsWith('http')) return imageUrl
+    
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-    return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
+    
+    // Если путь уже содержит storage/v1/object/public, не дублируем
+    if (imageUrl.includes('storage/v1/object/public')) {
+      return `${supabaseUrl}/${imageUrl.replace(/^\/+/, '')}`
+    }
+    
+    // Если путь начинается с images/, это bucket путь
+    if (imageUrl.startsWith('images/')) {
+      return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
+    }
+    
+    // Иначе предполагаем что это полный путь от storage
+    return `${supabaseUrl}/storage/v1/object/public/${imageUrl.replace(/^\/+/, '')}`
   }
   
+  // Приоритет: featured_image > og_image > первое изображение из контента
   const ogImage = getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image) || getFirstImage(post.content)
+  
+  // Логируем для отладки
+  console.log('🖼️ Post OG Image:', {
+    featured_image: post.featured_image,
+    og_image: post.og_image,
+    final: ogImage
+  })
 
   return (
     <div className="max-w-7xl mx-auto px-4">
