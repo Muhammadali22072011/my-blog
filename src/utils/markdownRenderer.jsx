@@ -437,15 +437,17 @@ export const processInlineMarkdown = (text) => {
   }
 
   // HTML span теги (для цветного текста)
-  // Улучшенный regex который ловит span с любым содержимым
-  const spanRegex = /<span\s+style="([^"]+)">([^<]+)<\/span>/g
-  while ((match = spanRegex.exec(text)) !== null) {
+  // Простой regex для span тегов
+  const spanRegex = /<span\s+style="([^"]+)">([^<]*)<\/span>/gi
+  let spanMatch
+  while ((spanMatch = spanRegex.exec(text)) !== null) {
+    console.log('🎨 Found span:', spanMatch[0], 'style:', spanMatch[1], 'content:', spanMatch[2])
     patterns.push({
       type: 'span',
-      start: match.index,
-      end: match.index + match[0].length,
-      style: match[1],
-      content: match[2]
+      start: spanMatch.index,
+      end: spanMatch.index + spanMatch[0].length,
+      style: spanMatch[1],
+      content: spanMatch[2]
     })
   }
 
