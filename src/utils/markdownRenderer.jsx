@@ -438,7 +438,7 @@ export const processInlineMarkdown = (text) => {
 
   // HTML span теги (для цветного текста)
   // Улучшенный regex который ловит span с любым содержимым
-  const spanRegex = /<span\s+style="([^"]+)">(.+?)<\/span>/gs
+  const spanRegex = /<span\s+style="([^"]+)">([^<]+)<\/span>/g
   while ((match = spanRegex.exec(text)) !== null) {
     patterns.push({
       type: 'span',
