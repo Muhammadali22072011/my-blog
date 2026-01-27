@@ -381,6 +381,8 @@ export const processInlineMarkdown = (text) => {
     text = String(text)
   }
 
+  console.log('🔍 processInlineMarkdown input:', text)
+
   const elements = []
   let lastIndex = 0
   const patterns = []
