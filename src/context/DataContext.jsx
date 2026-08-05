@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import supabaseService from '../services/SupabaseService'
 import { supabase } from '../config/supabase'
 
@@ -22,124 +22,72 @@ export const DataProvider = ({ children }) => {
   const [dbInitialized, setDbInitialized] = useState(false)
   const [newPost, setNewPost] = useState(null)
 
-  // Инициализация базы данных
+  /*
+   * Каналы realtime хранятся в ref, а не в window.realtimeSubscriptions.
+   * Глобальный объект ломался при двойном монтировании в StrictMode:
+   * второй setup перезаписывал ссылки до того, как отрабатывала очистка
+   * первого, и первый комплект из четырёх websocket-каналов утекал.
+   */
+  const channelsRef = useRef([])
+
   useEffect(() => {
+    let cancelled = false
+
     const initializeDatabase = async () => {
       try {
         setLoading(true)
         setError(null)
-        
+
         await supabaseService.initialize()
+        if (cancelled) return
         setDbInitialized(true)
-        
-        // Загружаем все данные
+
         await loadAllData()
-        
-        // Настраиваем realtime подписки
+        if (cancelled) return
+
         setupRealtimeSubscriptions()
-        
       } catch (error) {
         console.error('Ошибка инициализации Supabase:', error)
-        setError(error.message)
+        if (!cancelled) setError(error.message)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     initializeDatabase()
 
-    // Очистка подписок при размонтировании
     return () => {
+      cancelled = true
       cleanupRealtimeSubscriptions()
     }
   }, [])
 
   // Настройка realtime подписок
   const setupRealtimeSubscriptions = () => {
+    // На случай повторного вызова — сначала снимаем прежние каналы
+    cleanupRealtimeSubscriptions()
 
-    // Подписка на изменения в таблице posts
-    const postsSubscription = supabase
-      .channel('posts_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts'
-        },
-        (payload) => {
-          handlePostsChange(payload)
-        }
-      )
-      .subscribe()
+    const subscriptions = [
+      ['posts', 'posts_changes', handlePostsChange],
+      ['profile', 'profile_changes', handleProfileChange],
+      ['about_me', 'about_me_changes', handleAboutMeChange],
+      ['site_settings', 'site_settings_changes', handleSettingsChange],
+    ]
 
-    // Подписка на изменения в таблице profile
-    const profileSubscription = supabase
-      .channel('profile_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profile'
-        },
-        (payload) => {
-          handleProfileChange(payload)
-        }
-      )
-      .subscribe()
-
-    // Подписка на изменения в таблице about_me
-    const aboutMeSubscription = supabase
-      .channel('about_me_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'about_me'
-        },
-        (payload) => {
-          handleAboutMeChange(payload)
-        }
-      )
-      .subscribe()
-
-    // Подписка на изменения в таблице site_settings
-    const settingsSubscription = supabase
-      .channel('site_settings_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'site_settings'
-        },
-        (payload) => {
-          handleSettingsChange(payload)
-        }
-      )
-      .subscribe()
-
-    // Сохраняем ссылки на подписки для очистки
-    window.realtimeSubscriptions = {
-      posts: postsSubscription,
-      profile: profileSubscription,
-      aboutMe: aboutMeSubscription,
-      settings: settingsSubscription
-    }
+    channelsRef.current = subscriptions.map(([table, channelName, handler]) =>
+      supabase
+        .channel(channelName)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, handler)
+        .subscribe()
+    )
   }
 
   // Очистка realtime подписок
   const cleanupRealtimeSubscriptions = () => {
-    if (window.realtimeSubscriptions) {
-      Object.values(window.realtimeSubscriptions).forEach(subscription => {
-        if (subscription) {
-          supabase.removeChannel(subscription)
-        }
-      })
-      window.realtimeSubscriptions = null
+    for (const channel of channelsRef.current) {
+      if (channel) supabase.removeChannel(channel)
     }
+    channelsRef.current = []
   }
 
   // Обработчики изменений в реальном времени

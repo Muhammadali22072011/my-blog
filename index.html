@@ -1,101 +1,107 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 
-    <!-- Primary Meta Tags (optimized and deduplicated) -->
-    <title>Muhammadali Blog | Professional Tech Insights & Blog Platform</title>
-    <meta name="title" content="Muhammadali Blog | Professional Tech Insights & Blog Platform" />
-    <meta name="description" content="Professional blog by Muhammadali. Explore expert articles, tutorials, and insights on technology, programming, and web development. Stay ahead with the latest in software engineering, JavaScript, React, and more. A trusted blog for developers and tech enthusiasts." />
-    <meta name="keywords" content="Muhammadali, professional blog, tech blog, programming, web development, software engineering, JavaScript, React, tutorials, coding, frontend, backend, fullstack, developer, technology news, digital trends, minimalism, personal blog, portfolio, modern web, UI/UX, coding tips, best practices, open source, learning, education, IT, blog, articles, guides, resources, projects, experience, career, productivity, tools, frameworks, libraries, CSS, HTML, TypeScript, Node.js, Vite, TailwindCSS, SEO, optimization, performance, accessibility, responsive design, mobile development, cloud, devops, github, Uzbekistan, Central Asia, English, Russian, Uzbek, версел, Vercel, authoritative blog" />
-    <meta name="author" content="Muhammadali" />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="copyright" content="Muhammadali" />
-    <meta name="theme-color" content="#fff" />
-    <meta name="language" content="en" />
-    <meta name="revisit-after" content="3 days" />
-    <meta name="distribution" content="global" />
-    <meta name="geo.region" content="UZ" />
-    <meta name="geo.placename" content="Uzbekistan" />
-    <meta name="geo.position" content="41.3775;64.5853" />
-    <meta name="ICBM" content="41.3775,64.5853" />
+    <!--
+      Тема применяется ДО первой отрисовки — иначе тёмная тема моргает белым.
+      Логика синхронизирована с src/context/ThemeContext.jsx.
+    -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var dark = saved
+            ? saved === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+          document.documentElement.style.backgroundColor = dark ? '#100F0D' : '#F5EFE4';
+        } catch (e) { /* приватный режим — просто оставляем светлую тему */ }
+      })();
+    </script>
 
-    <!-- Open Graph / Facebook -->
+    <!-- Primary Meta Tags -->
+    <title>Muhammadali Izzatullaev — записки о коде, ИИ и ремесле</title>
+    <meta name="title" content="Muhammadali Izzatullaev — записки о коде, ИИ и ремесле" />
+    <meta
+      name="description"
+      content="Личный журнал Мухаммадали Иззатуллаева: разработка, искусственный интеллект, инструменты и наблюдения о ремесле программиста. Длинные тексты, разборы и заметки."
+    />
+    <meta name="author" content="Muhammadali Izzatullaev" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <meta name="theme-color" content="#F5EFE4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#100F0D" media="(prefers-color-scheme: dark)" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://muhammadali-blog.vercel.app/" />
-    <meta property="og:title" content="Muhammadali Blog | Professional Tech Insights & Blog Platform" />
-    <meta property="og:description" content="Professional blog by Muhammadali. Explore expert articles, tutorials, and insights on technology, programming, and web development. A trusted blog for developers and tech enthusiasts." />
+    <meta property="og:title" content="Muhammadali Izzatullaev — записки о коде, ИИ и ремесле" />
+    <meta
+      property="og:description"
+      content="Личный журнал: разработка, искусственный интеллект, инструменты и наблюдения о ремесле программиста."
+    />
     <meta property="og:image" content="https://muhammadali-blog.vercel.app/og-image.png" />
-    <meta property="og:site_name" content="Muhammadali Blog" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:locale:alternate" content="ru_RU" />
+    <meta property="og:site_name" content="Muhammadali Izzatullaev" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:locale:alternate" content="en_US" />
     <meta property="og:locale:alternate" content="uz_UZ" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://muhammadali-blog.vercel.app/" />
-    <meta name="twitter:title" content="Muhammadali Blog | Professional Tech Insights & Blog Platform" />
-    <meta name="twitter:description" content="Professional blog by Muhammadali. Explore expert articles, tutorials, and insights on technology, programming, and web development. A trusted blog for developers and tech enthusiasts." />
+    <meta name="twitter:title" content="Muhammadali Izzatullaev — записки о коде, ИИ и ремесле" />
+    <meta
+      name="twitter:description"
+      content="Личный журнал: разработка, искусственный интеллект, инструменты и наблюдения о ремесле программиста."
+    />
     <meta name="twitter:image" content="https://muhammadali-blog.vercel.app/og-image.png" />
-    <meta name="twitter:creator" content="@muhammadali" />
 
-    <!-- Canonical & Alternate -->
     <link rel="canonical" href="https://muhammadali-blog.vercel.app/" />
-    <link rel="alternate" href="https://muhammadali-blog.vercel.app/" hreflang="en" />
-    <link rel="alternate" href="https://muhammadali-blog.vercel.app/ru" hreflang="ru" />
-    <link rel="alternate" href="https://muhammadali-blog.vercel.app/uz" hreflang="uz" />
 
-    <!-- Favicons -->
+    <!-- Иконки. Все файлы генерируются: node scripts/build-assets.mjs -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="msapplication-TileColor" content="#fff" />
+    <link rel="manifest" href="/manifest.json" />
 
-    <!-- Preconnect & Prefetch for performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <!--
+      Шрифты дизайн-системы REGISTAN.
 
+      Все три содержат полную кириллицу — это жёсткое требование
+      для русскоязычного журнала. Красивые Fraunces и Newsreader
+      пришлось отвергнуть именно по этой причине: латиница у них
+      отличная, а на русском тексте браузер молча подставляет
+      системный шрифт, и заголовки набираются не тем, чем задумано.
 
-    <!-- Font loading optimization -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" onload="this.rel='stylesheet'">
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
-    </noscript>
+        Literata      — заголовки и акциденция (вариативная, ось opsz)
+        Golos Text    — основной текст (гротеск Паратайпа, кириллица родная)
+        JetBrains Mono — метаданные, цифры, код
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..600&family=Golos+Text:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
 
-
-
-    <!-- Structured Data (JSON-LD) -->
+    <!-- Structured Data -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Blog",
-        "name": "Muhammadali Blog",
+        "name": "Muhammadali Izzatullaev",
         "url": "https://muhammadali-blog.vercel.app/",
-        "description": "Muhammadali Blog — Professional blog with expert articles, tutorials, and insights on technology, programming, and web development.",
-        "publisher": {
-          "@type": "Person",
-          "name": "Muhammadali",
-          "url": "https://muhammadali-blog.vercel.app/",
-          "sameAs": [
-            "https://github.com/muhammadali",
-            "https://twitter.com/muhammadali"
-          ]
-        },
-        "inLanguage": "en",
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": "https://muhammadali-blog.vercel.app/"
-        },
-        "image": "https://muhammadali-blog.vercel.app/og-image.png",
+        "description": "Личный журнал о разработке, искусственном интеллекте и ремесле программиста.",
+        "inLanguage": ["ru", "en", "uz"],
         "author": {
           "@type": "Person",
-          "name": "Muhammadali",
+          "name": "Muhammadali Izzatullaev",
           "url": "https://muhammadali-blog.vercel.app/"
+        },
+        "publisher": {
+          "@type": "Person",
+          "name": "Muhammadali Izzatullaev"
         }
       }
     </script>
@@ -103,7 +109,7 @@
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "Muhammadali Blog",
+        "name": "Muhammadali Izzatullaev",
         "url": "https://muhammadali-blog.vercel.app/",
         "potentialAction": {
           "@type": "SearchAction",
@@ -112,64 +118,6 @@
         }
       }
     </script>
-
-    <!-- Performance: Lazy load images -->
-    <script>
-      // Реализация поиска по сайту по ключевым словам "Muhammadali Blog"
-      document.addEventListener('DOMContentLoaded', function() {
-        // Если пользователь начинает вводить "Muhammadali Blog" в поиске, показываем подсказку
-        // Для этого добавим простой скрипт, который отслеживает фокус на любом input[type="search"]
-        document.querySelectorAll('input[type="search"]').forEach(function(input) {
-          input.addEventListener('input', function(e) {
-            const value = e.target.value.toLowerCase();
-            const suggestionId = 'muhammadali-blog-suggestion';
-            let suggestion = document.getElementById(suggestionId);
-
-            if (value.includes('muhammadali blog')) {
-              if (!suggestion) {
-                suggestion = document.createElement('div');
-                suggestion.id = suggestionId;
-                suggestion.textContent = 'Перейти на Muhammadali Blog';
-                suggestion.style.position = 'absolute';
-                suggestion.style.background = '#fff';
-                suggestion.style.border = '1px solid #e5e7eb';
-                suggestion.style.padding = '8px 16px';
-                suggestion.style.borderRadius = '8px';
-                suggestion.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-                suggestion.style.cursor = 'pointer';
-                suggestion.style.zIndex = 9999;
-                suggestion.style.top = (input.offsetTop + input.offsetHeight + 4) + 'px';
-                suggestion.style.left = input.offsetLeft + 'px';
-                suggestion.onclick = function() {
-                  window.location.href = '/';
-                };
-                input.parentNode.appendChild(suggestion);
-              }
-            } else {
-              if (suggestion) {
-                suggestion.remove();
-              }
-            }
-          });
-          // Удаляем подсказку при потере фокуса
-          input.addEventListener('blur', function() {
-            const suggestion = document.getElementById('muhammadali-blog-suggestion');
-            if (suggestion) suggestion.remove();
-          });
-        });
-
-        // Обычная ленивая загрузка картинок
-        if ('loading' in HTMLImageElement.prototype) {
-          document.querySelectorAll('img[loading="lazy"]').forEach(function(img) {
-            img.loading = 'lazy';
-          });
-        }
-      });
-    </script>
-
-    <!-- Performance: Preconnect to analytics (if used in future) -->
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
   </head>
   <body>
     <div id="root"></div>

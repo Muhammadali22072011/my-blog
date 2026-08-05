@@ -1013,199 +1013,31 @@ class SupabaseService {
   // Увеличение счетчика просмотров поста
   async incrementPostViews(postId) {
     try {
-      const { error } = await supabase.rpc('increment_post_views', {
-        post_id_param: postId
+      // Имя аргумента должно совпадать с сигнатурой функции в базе
+      // (supabase/migrations/increment_post_views.sql). Раньше здесь
+      // передавался post_id_param, которого в функции нет.
+      const { data, error } = await supabase.rpc('increment_post_views', {
+        post_id: postId
       })
-      
+
       if (error) throw error
-      return true
+      return data
     } catch (error) {
       console.error('Ошибка увеличения просмотров:', error)
-      return false
+      return null
     }
   }
 
-  // ==================== MEDIA FUNCTIONS ====================
-
-  // Получить список изображений из storage
-  async getImages() {
-    try {
-      console.log('🔍 [getImages] Начинаем загрузку изображений...')
-      
-      const { data, error } = await supabase
-        .storage
-        .from('images')
-        .list('blog-images', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        })
-
-      if (error) {
-        console.error('❌ [getImages] Ошибка от Supabase:', error)
-        throw error
-      }
-
-      console.log('📦 [getImages] Получено файлов:', data?.length || 0)
-      console.log('📋 [getImages] Сырые данные:', data)
-
-      // Формируем полные URL для изображений
-      const images = data.map(file => {
-        const publicUrl = supabase.storage.from('images').getPublicUrl(`blog-images/${file.name}`).data.publicUrl
-        
-        const imageData = {
-          name: file.name,
-          path: `blog-images/${file.name}`,
-          url: publicUrl,
-          size: file.metadata?.size || 0,
-          type: file.metadata?.mimetype || 'image/*',
-          created_at: file.created_at
-        }
-        
-        console.log('🖼️ [getImages] Обработано изображение:', {
-          name: file.name,
-          url: publicUrl,
-          size: imageData.size
-        })
-        
-        return imageData
-      })
-
-      console.log('✅ [getImages] Всего изображений обработано:', images.length)
-      console.log('🎯 [getImages] Первое изображение:', images[0])
-      
-      return images
-    } catch (error) {
-      console.error('💥 [getImages] Критическая ошибка:', error)
-      console.error('📍 [getImages] Stack trace:', error.stack)
-      throw error
-    }
-  }
-
-  // Получить список видео из storage
-  async getVideos() {
-    try {
-      const { data, error } = await supabase
-        .storage
-        .from('videos')
-        .list('blog-videos', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        })
-
-      if (error) throw error
-
-      // Формируем полные URL для видео
-      const videos = data.map(file => ({
-        name: file.name,
-        path: `blog-videos/${file.name}`,
-        url: `${supabase.storage.from('videos').getPublicUrl(`blog-videos/${file.name}`).data.publicUrl}`,
-        size: file.metadata?.size || 0,
-        type: file.metadata?.mimetype || 'video/*',
-        created_at: file.created_at
-      }))
-
-      return videos
-    } catch (error) {
-      console.error('Ошибка загрузки видео:', error)
-      throw error
-    }
-  }
-
-  // Загрузить изображение
-  async uploadImage(file) {
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `blog-images/${fileName}`
-
-      const { data, error } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (error) throw error
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath)
-
-      return {
-        path: filePath,
-        url: publicUrl,
-        name: fileName,
-        fullUrl: publicUrl
-      }
-    } catch (error) {
-      console.error('Ошибка загрузки изображения:', error)
-      throw error
-    }
-  }
-
-  // Загрузить видео
-  async uploadVideo(file) {
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `blog-videos/${fileName}`
-
-      const { data, error } = await supabase.storage
-        .from('videos')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (error) throw error
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('videos')
-        .getPublicUrl(filePath)
-
-      return {
-        path: filePath,
-        url: publicUrl,
-        name: fileName,
-        fullUrl: publicUrl
-      }
-    } catch (error) {
-      console.error('Ошибка загрузки видео:', error)
-      throw error
-    }
-  }
-
-  // Удалить изображение
-  async deleteImage(path) {
-    try {
-      const { error } = await supabase.storage
-        .from('images')
-        .remove([path])
-
-      if (error) throw error
-      return true
-    } catch (error) {
-      console.error('Ошибка удаления изображения:', error)
-      throw error
-    }
-  }
-
-  // Удалить видео
-  async deleteVideo(path) {
-    try {
-      const { error } = await supabase.storage
-        .from('videos')
-        .remove([path])
-
-      if (error) throw error
-      return true
-    } catch (error) {
-      console.error('Ошибка удаления видео:', error)
-      throw error
-    }
-  }
+  /*
+   * Здесь лежал ВТОРОЙ комплект методов работы с медиа:
+   * getImages / getVideos / uploadImage / uploadVideo / deleteImage / deleteVideo.
+   * В классе JS побеждает последнее объявление, поэтому работали именно они,
+   * а версии выше (строки ~540–760) были мёртвым кодом. Последствия:
+   *   — параметр folder игнорировался: uploadImage(file, 'avatars') из
+   *     AvatarUploader и Admin клал аватары в blog-images;
+   *   — терялись проверки типа файла и лимитов размера (5 МБ / 50 МБ).
+   * Дубли удалены, рабочими остались версии с валидацией и параметром folder.
+   */
 }
 
 // Создаем единственный экземпляр сервиса

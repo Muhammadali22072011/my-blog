@@ -1,21 +1,32 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
-// Компонент для интеграции Google Analytics и Yandex Metrika
+/*
+ * Отправка просмотров страниц в Google Analytics и Яндекс.Метрику.
+ *
+ * Раньше здесь стояло `window.ym(XXXXXXXX, 'hit', …)` — голый
+ * идентификатор без кавычек. Это не заглушка, а ReferenceError:
+ * стоило подключить счётчик Метрики, и код падал на каждом переходе.
+ *
+ * Теперь номера счётчиков берутся из переменных окружения; если они
+ * не заданы, компонент молча ничего не делает.
+ */
+const GA_ID = import.meta.env.VITE_GA_ID
+const YM_ID = import.meta.env.VITE_YM_ID
+
 function Analytics() {
   const location = useLocation()
 
   useEffect(() => {
-    // Google Analytics - отслеживание просмотров страниц
-    if (window.gtag) {
-      window.gtag('config', 'G-XXXXXXXXXX', {
-        page_path: location.pathname + location.search
-      })
+    const page = location.pathname + location.search
+
+    if (GA_ID && typeof window.gtag === 'function') {
+      window.gtag('config', GA_ID, { page_path: page })
     }
 
-    // Yandex Metrika - отслеживание просмотров страниц
-    if (window.ym) {
-      window.ym(XXXXXXXX, 'hit', location.pathname + location.search)
+    const counter = Number(YM_ID)
+    if (counter && typeof window.ym === 'function') {
+      window.ym(counter, 'hit', page)
     }
   }, [location])
 

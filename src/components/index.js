@@ -27,7 +27,9 @@ export { default as PostStats } from './PostStats'
 export { default as FloatingTOC } from './FloatingTOC'
 export { default as ExportPost } from './ExportPost'
 export { default as QuoteShare } from './QuoteShare'
-export { default as ReaderAnalytics } from './ReaderAnalytics'
+// ReaderAnalytics здесь не экспортируется: файла ./ReaderAnalytics не существует.
+// Пока этот barrel никто не импортировал, сборка проходила — но первый же
+// `import { … } from '../components'` ронял бы её с ошибкой разрешения модуля.
 
 // Layout Components
 export { default as Layout } from './Layout'

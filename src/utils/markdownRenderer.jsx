@@ -1,561 +1,549 @@
 import React from 'react'
 import CustomVideoPlayer from '../components/CustomVideoPlayer'
+import { getFullImageUrl } from './postFormat'
 
 /**
- * Вспомогательная функция для формирования полного URL изображения
+ * Рендерер Markdown → React.
+ *
+ * Что здесь исправлено по сравнению с прежней версией:
+ *
+ *  1. Работает стандартный `**жирный**`. Раньше поддерживался только
+ *     нестандартный `++жирный++`, а регулярка курсива `\*(.*?)\*`
+ *     разрывала `**` пополам и калечила текст.
+ *  2. Инлайновые элементы разбираются ОДНИМ проходом слева направо.
+ *     Раньше каждый вид собирался своей регуляркой в общий список,
+ *     диапазоны накладывались, и `text.substring(lastIndex, start)`
+ *     при start < lastIndex молча дублировал куски текста.
+ *  3. Таблица распознаётся только при наличии строки-разделителя.
+ *     Раньше любой абзац с символом `|` (например `a || b`) превращался
+ *     в таблицу.
+ *  4. Убрана «автоматическая расстановка переносов»: текст длиннее 100
+ *     символов резался по каждой точке с пробелом, ломая ссылки,
+ *     сокращения и числа.
+ *  5. Убраны console.log на каждый инлайновый вызов — на длинном посте
+ *     это тысячи записей в консоль.
+ *  6. Цвета берутся из токенов темы, поэтому текст читаем в тёмной теме.
  */
-const getFullImageUrl = (url) => {
-  if (!url) return ''
-  // Если URL уже полный (начинается с http/https), возвращаем как есть
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
+
+/* ──────────────────────────────────────────────────────────────
+   Инлайновая разметка
+   ────────────────────────────────────────────────────────────── */
+
+// Порядок важен: сначала то, что не должно разбираться внутри (код, span),
+// затем изображения и ссылки, затем начертания.
+const INLINE_PATTERN = new RegExp(
+  [
+    /(?<code>`[^`\n]+`)/.source,
+    /(?<span><span\s+style="(?<spanStyle>[^"]*)"\s*>(?<spanText>[\s\S]*?)<\/span>)/.source,
+    /(?<img>!\[(?<imgAlt>[^\]]*)\]\((?<imgUrl>[^)\s]+)\))/.source,
+    /(?<link>\[(?<linkText>[^\]]+)\]\((?<linkUrl>[^)\s]+)\))/.source,
+    /(?<strong>\*\*(?<strongText>[\s\S]+?)\*\*|\+\+(?<strongText2>[\s\S]+?)\+\+|__(?<strongText3>[\s\S]+?)__)/.source,
+    /(?<em>\*(?<emText>[^*\n]+)\*|_(?<emText2>[^_\n]+)_)/.source,
+    /(?<del>~~(?<delText>[\s\S]+?)~~)/.source,
+  ].join('|'),
+  'g'
+)
+
+// Свойства, которые автор поста может задать через <span style="…">.
+// Всё остальное отбрасывается, чтобы разметка не могла подгрузить
+// внешние ресурсы или сломать вёрстку страницы.
+const ALLOWED_STYLE_PROPS = new Set([
+  'color',
+  'background-color',
+  'font-weight',
+  'font-style',
+  'font-size',
+  'font-family',
+  'text-decoration',
+  'text-transform',
+  'letter-spacing',
+  'line-height',
+  'padding',
+  'border-radius',
+  'border',
+  'opacity',
+])
+
+function parseStyle(styleString) {
+  const styleObj = {}
+  if (!styleString) return styleObj
+
+  for (const rule of styleString.split(';')) {
+    const idx = rule.indexOf(':')
+    if (idx === -1) continue
+
+    const prop = rule.slice(0, idx).trim().toLowerCase()
+    const value = rule.slice(idx + 1).trim()
+
+    if (!prop || !value) continue
+    if (!ALLOWED_STYLE_PROPS.has(prop)) continue
+    if (/url\s*\(|expression\s*\(|javascript:/i.test(value)) continue
+
+    const camel = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+    styleObj[camel] = value
   }
-  // Если это относительный путь, добавляем базовый URL Supabase storage
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-  return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${url}`
+
+  return styleObj
 }
 
-/**
- * Улучшенный рендерер Markdown для React
- * Поддерживает все основные элементы Markdown с правильной обработкой
- */
+/** Внешние ссылки открываются в новой вкладке, внутренние — нет */
+function isExternal(url) {
+  return /^https?:\/\//i.test(url)
+}
+
+/** Отбрасывает опасные схемы в href */
+function safeHref(url) {
+  const trimmed = (url || '').trim()
+  if (/^(javascript|data|vbscript):/i.test(trimmed)) return '#'
+  return trimmed
+}
+
+export function processInlineMarkdown(text) {
+  if (text === null || text === undefined) return ''
+  const source = typeof text === 'string' ? text : String(text)
+  if (!source) return ''
+
+  const nodes = []
+  let lastIndex = 0
+  let key = 0
+
+  INLINE_PATTERN.lastIndex = 0
+  let match
+
+  while ((match = INLINE_PATTERN.exec(source)) !== null) {
+    // Защита от нулевой длины совпадения — иначе бесконечный цикл
+    if (match[0].length === 0) {
+      INLINE_PATTERN.lastIndex += 1
+      continue
+    }
+
+    if (match.index > lastIndex) {
+      nodes.push(source.slice(lastIndex, match.index))
+    }
+
+    const g = match.groups
+
+    if (g.code) {
+      nodes.push(
+        <code
+          key={key++}
+          className="rounded-sm bg-ink/[0.07] px-1.5 py-0.5 font-mono text-[0.85em] text-tile"
+        >
+          {g.code.slice(1, -1)}
+        </code>
+      )
+    } else if (g.span) {
+      nodes.push(
+        <span key={key++} style={parseStyle(g.spanStyle)}>
+          {processInlineMarkdown(g.spanText)}
+        </span>
+      )
+    } else if (g.img) {
+      nodes.push(
+        <img
+          key={key++}
+          src={getFullImageUrl(g.imgUrl) || g.imgUrl}
+          alt={g.imgAlt || ''}
+          loading="lazy"
+          className="my-1 inline-block max-w-full align-middle"
+        />
+      )
+    } else if (g.link) {
+      const href = safeHref(g.linkUrl)
+      nodes.push(
+        <a
+          key={key++}
+          href={href}
+          {...(isExternal(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          className="link-wipe text-tile"
+        >
+          {processInlineMarkdown(g.linkText)}
+        </a>
+      )
+    } else if (g.strong) {
+      const content = g.strongText ?? g.strongText2 ?? g.strongText3 ?? ''
+      nodes.push(
+        <strong key={key++} className="font-semibold text-ink">
+          {processInlineMarkdown(content)}
+        </strong>
+      )
+    } else if (g.em) {
+      const content = g.emText ?? g.emText2 ?? ''
+      nodes.push(
+        <em key={key++} className="italic">
+          {processInlineMarkdown(content)}
+        </em>
+      )
+    } else if (g.del) {
+      nodes.push(
+        <del key={key++} className="text-ink-faint line-through">
+          {processInlineMarkdown(g.delText)}
+        </del>
+      )
+    }
+
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < source.length) {
+    nodes.push(source.slice(lastIndex))
+  }
+
+  if (nodes.length === 0) return source
+  if (nodes.length === 1 && typeof nodes[0] === 'string') return nodes[0]
+  return <>{nodes}</>
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Блочная разметка
+   ────────────────────────────────────────────────────────────── */
+
+const HEADING_CLASS = {
+  1: 'display mt-14 mb-5 text-[2.4rem] leading-tight',
+  2: 'display mt-12 mb-4 text-[1.95rem] leading-tight',
+  3: 'display mt-10 mb-3 text-[1.55rem] leading-snug',
+  4: 'display mt-8 mb-3 text-[1.3rem]',
+  5: 'label mt-8 mb-2 block',
+  6: 'label mt-6 mb-2 block',
+}
+
+/** Якорь для оглавления — совпадает с логикой TableOfContents */
+function slugify(text) {
+  return String(text)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** Строка-разделитель таблицы: |---|:--:|---| */
+function isTableSeparator(line) {
+  const trimmed = line.trim()
+  if (!trimmed.includes('-')) return false
+  return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(trimmed)
+}
+
+function splitTableRow(line) {
+  return line
+    .trim()
+    .replace(/^\||\|$/g, '')
+    .split('|')
+    .map((cell) => cell.trim())
+}
 
 export const renderMarkdown = (text, options = {}) => {
   if (!text || typeof text !== 'string') {
-    return options.emptyText ? <p className="text-gray-400">{options.emptyText}</p> : null
+    return options.emptyText ? (
+      <p className="text-ink-faint">{options.emptyText}</p>
+    ) : null
   }
 
-  // Нормализация строк и удаление дублирующихся пустых строк
-  let normalizedText = text
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-  
-  // Если текст не содержит переносов строк (слитый текст), добавляем их автоматически
-  if (!normalizedText.includes('\n') && normalizedText.length > 100) {
-    // Разбиваем по точкам с пробелом (конец предложения)
-    normalizedText = normalizedText.replace(/\.\s+/g, '.\n\n')
-    // Разбиваем по восклицательным и вопросительным знакам
-    normalizedText = normalizedText.replace(/([!?])\s+/g, '$1\n\n')
-  }
-  
-  const lines = normalizedText
-    .split('\n')
-    .filter((line, index, arr) => {
-      // Убираем дублирующиеся пустые строки
-      if (line.trim() === '') {
-        return index === 0 || arr[index - 1].trim() !== ''
-      }
-      return true
-    })
-  
+  const lines = text.replace(/\r\n?/g, '\n').split('\n')
   const elements = []
   let i = 0
+  let key = 0
 
   while (i < lines.length) {
     const line = lines[i]
-    const trimmedLine = line.trim()
+    const trimmed = line.trim()
 
-    // Пропускаем пустые строки
-    if (!trimmedLine) {
+    if (!trimmed) {
       i++
       continue
     }
 
-    // Блоки кода
-    if (trimmedLine.startsWith('```')) {
-      const codeContent = []
-      i++ // Пропускаем открывающий ```
-      
+    /* ── Блок кода ───────────────────────────────────────────── */
+    if (trimmed.startsWith('```')) {
+      const lang = trimmed.slice(3).trim()
+      const code = []
+      i++
       while (i < lines.length && !lines[i].trim().startsWith('```')) {
-        codeContent.push(lines[i])
+        code.push(lines[i])
         i++
       }
-      i++ // Пропускаем закрывающий ```
-      
-      if (codeContent.length > 0) {
-        elements.push(
-          <pre key={`code-${elements.length}`} className="bg-gray-100 p-6 rounded-lg overflow-x-auto my-6 border border-gray-200 shadow-sm">
-            <code className="text-sm font-mono text-gray-800 whitespace-pre-wrap leading-relaxed">
-              {codeContent.join('\n')}
+      i++ // закрывающий ```
+
+      elements.push(
+        <div key={key++} className="my-8">
+          {lang && <p className="label mb-2">{lang}</p>}
+          <pre className="overflow-x-auto border border-ink/15 bg-ink/[0.04] p-5">
+            <code className="font-mono text-[0.85rem] leading-relaxed text-ink">
+              {code.join('\n')}
             </code>
           </pre>
-        )
-      }
+        </div>
+      )
       continue
     }
 
-    // Заголовки
-    if (trimmedLine.startsWith('#')) {
-      const level = trimmedLine.match(/^#+/)[0].length
-      const headerText = trimmedLine.replace(/^#+\s*/, '')
-      const HeaderTag = `h${Math.min(level, 6)}`
-      
-      const className = {
-        1: "text-4xl font-bold text-gray-900 mb-6 mt-8",
-        2: "text-3xl font-bold text-gray-800 mb-4 mt-6", 
-        3: "text-2xl font-bold text-gray-700 mb-3 mt-5",
-        4: "text-xl font-bold text-gray-700 mb-3 mt-4",
-        5: "text-lg font-bold text-gray-700 mb-2 mt-3",
-        6: "text-base font-bold text-gray-700 mb-2 mt-2"
-      }[level] || "text-base font-bold text-gray-700 mb-2 mt-2"
-      
+    /* ── Заголовок ───────────────────────────────────────────── */
+    const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/)
+    if (headingMatch) {
+      const level = headingMatch[1].length
+      const headerText = headingMatch[2].trim()
+      const Tag = `h${Math.min(level, 6)}`
+
       elements.push(
-        <HeaderTag key={`h${level}-${elements.length}`} className={className}>
+        <Tag key={key++} id={slugify(headerText)} className={HEADING_CLASS[level]}>
           {processInlineMarkdown(headerText)}
-        </HeaderTag>
+        </Tag>
       )
       i++
       continue
     }
 
-    // Цитаты
-    if (trimmedLine.startsWith('>')) {
-      const quoteLines = []
-      let currentLine = i
-      
-      // Собираем все последовательные строки цитат
-      while (currentLine < lines.length && lines[currentLine].trim().startsWith('>')) {
-        const quoteContent = lines[currentLine].replace(/^>\s*/, '')
-        quoteLines.push(quoteContent)
-        currentLine++
-      }
-      
-      const quoteContent = quoteLines.join(' ')
+    /* ── Горизонтальная линейка ──────────────────────────────── */
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
       elements.push(
-        <blockquote key={`quote-${elements.length}`} className="border-l-4 border-gray-300 pl-6 py-4 my-6 bg-gray-50 italic text-gray-700 rounded-r-lg">
-          {processInlineMarkdown(quoteContent)}
+        <div key={key++} className="ornament my-12">
+          <span className="label label-tile">◆</span>
+        </div>
+      )
+      i++
+      continue
+    }
+
+    /* ── Цитата ──────────────────────────────────────────────── */
+    if (trimmed.startsWith('>')) {
+      const quote = []
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quote.push(lines[i].trim().replace(/^>\s?/, ''))
+        i++
+      }
+
+      elements.push(
+        <blockquote
+          key={key++}
+          className="my-8 border-l-2 border-tile py-1 pl-6 font-serif text-[1.15em] italic text-ink/85"
+        >
+          {processInlineMarkdown(quote.join(' '))}
         </blockquote>
       )
-      
-      i = currentLine
       continue
     }
 
-    // Горизонтальные линии
-    if (trimmedLine === '---' || trimmedLine === '***' || trimmedLine === '___') {
-      elements.push(<hr key={`hr-${elements.length}`} className="my-6 border-gray-300" />)
-      i++
-      continue
-    }
+    /* ── Таблица (только с настоящей строкой-разделителем) ───── */
+    if (
+      trimmed.includes('|') &&
+      i + 1 < lines.length &&
+      isTableSeparator(lines[i + 1])
+    ) {
+      const header = splitTableRow(lines[i])
+      i += 2 // заголовок + разделитель
 
-    // Списки
-    if (trimmedLine.match(/^[-*]\s/) || trimmedLine.match(/^\d+\.\s/)) {
-      const listItems = []
-      const isOrdered = trimmedLine.match(/^\d+\.\s/)
-      
-      while (i < lines.length && (lines[i].trim().match(/^[-*]\s/) || lines[i].trim().match(/^\d+\.\s/))) {
-        const listLine = lines[i].trim()
-        const content = listLine.replace(/^([-*]|\d+\.)\s/, '')
-        
-        listItems.push(
-          <li key={`li-${i}`} className="text-gray-700 mb-2 leading-relaxed">
-            {processInlineMarkdown(content)}
-          </li>
-        )
+      const rows = []
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim()) {
+        rows.push(splitTableRow(lines[i]))
         i++
       }
-      
-      const ListComponent = isOrdered ? 'ol' : 'ul'
-      const listClass = isOrdered ? 'list-decimal ml-6 space-y-2' : 'list-disc ml-6 space-y-2'
-      
+
       elements.push(
-        <ListComponent key={`list-${elements.length}`} className={`${listClass} mb-6`}>
-          {listItems}
-        </ListComponent>
+        <div key={key++} className="my-8 overflow-x-auto">
+          <table className="w-full border-collapse text-[0.95em]">
+            <thead>
+              <tr>
+                {header.map((cell, idx) => (
+                  <th
+                    key={idx}
+                    className="label border-b border-ink/30 px-3 py-2.5 text-left align-bottom"
+                  >
+                    {processInlineMarkdown(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIdx) => (
+                <tr key={rowIdx} className="border-b border-ink/10">
+                  {row.map((cell, cellIdx) => (
+                    <td key={cellIdx} className="px-3 py-2.5 align-top">
+                      {processInlineMarkdown(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )
       continue
     }
 
-    // Таблицы
-    if (trimmedLine.includes('|')) {
-      const tableRows = []
-      
-      while (i < lines.length && lines[i].includes('|')) {
-        const tableLine = lines[i].trim()
-        if (tableLine && !tableLine.match(/^[\|\s\-:]+$/)) { // Пропускаем разделительные строки
-          const cells = tableLine.split('|').map(cell => cell.trim()).filter(cell => cell)
-          if (cells.length > 0) {
-            tableRows.push(cells)
-          }
-        }
+    /* ── Список ──────────────────────────────────────────────── */
+    const bulletMatch = trimmed.match(/^[-*+]\s+/)
+    const orderedMatch = trimmed.match(/^\d+[.)]\s+/)
+
+    if (bulletMatch || orderedMatch) {
+      const ordered = Boolean(orderedMatch)
+      const items = []
+
+      // Смешанные списки больше не склеиваются в один: цикл идёт
+      // только по пунктам того же типа, что и первый.
+      while (i < lines.length) {
+        const itemLine = lines[i].trim()
+        const isBullet = /^[-*+]\s+/.test(itemLine)
+        const isOrdered = /^\d+[.)]\s+/.test(itemLine)
+        if (ordered ? !isOrdered : !isBullet) break
+
+        items.push(itemLine.replace(/^([-*+]|\d+[.)])\s+/, ''))
         i++
       }
-      
-      if (tableRows.length > 0) {
-        const hasHeader = tableRows.length > 1
-        elements.push(
-          <div key={`table-${elements.length}`} className="my-6 overflow-x-auto">
-            <table className="min-w-full border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">
-              {hasHeader && (
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    {tableRows[0].map((cell, index) => (
-                      <th key={index} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700">
-                        {processInlineMarkdown(cell)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-              )}
-              <tbody>
-                {(hasHeader ? tableRows.slice(1) : tableRows).map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {processInlineMarkdown(cell)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      }
+
+      const ListTag = ordered ? 'ol' : 'ul'
+      elements.push(
+        <ListTag
+          key={key++}
+          className={`my-6 space-y-2 pl-6 ${ordered ? 'list-decimal' : 'list-disc'} marker:text-tile`}
+        >
+          {items.map((item, idx) => (
+            <li key={idx} className="leading-relaxed">
+              {processInlineMarkdown(item)}
+            </li>
+          ))}
+        </ListTag>
+      )
       continue
     }
 
-    // Изображения
-    if (trimmedLine.match(/^!\[.*?\]\(.*?\)$/)) {
-      const imageMatch = trimmedLine.match(/!\[([^\]]*)\]\(([^)]+)\)/)
-      if (imageMatch) {
-        const [, alt, url] = imageMatch
-        const fullUrl = getFullImageUrl(url)
-        
-        console.log('🖼️ [renderMarkdown] Обрабатываем изображение:', {
-          original: url,
-          fullUrl: fullUrl,
-          alt: alt
-        })
-        
+    /* ── Изображение отдельной строкой ───────────────────────── */
+    const imageOnly = trimmed.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/)
+    if (imageOnly) {
+      const [, alt, url] = imageOnly
+      elements.push(
+        <figure key={key++} className="my-10">
+          <img
+            src={getFullImageUrl(url) || url}
+            alt={alt || ''}
+            loading="lazy"
+            className="w-full"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+          {alt && <figcaption className="label mt-3">{alt}</figcaption>}
+        </figure>
+      )
+      i++
+      continue
+    }
+
+    /* ── Видео ───────────────────────────────────────────────── */
+    const videoTag = trimmed.match(/\[🎥\s*Video(?:\s*:\s*([^\]]+))?\]\(([^)\s]+)\)/)
+    if (videoTag) {
+      elements.push(
+        <div key={key++} className="my-10">
+          <CustomVideoPlayer src={videoTag[2]} title={videoTag[1] || 'Видео'} />
+        </div>
+      )
+      i++
+      continue
+    }
+
+    /* ── HTML <img> / <video> ────────────────────────────────── */
+    if (trimmed.includes('<img') || trimmed.includes('<video')) {
+      let html = trimmed
+      let cursor = i
+      while (cursor + 1 < lines.length && !html.includes('>')) {
+        cursor++
+        html += ' ' + lines[cursor].trim()
+      }
+
+      const imgSrc = html.match(/<img[^>]+src=["']([^"']+)["']/i)
+      const videoSrc = html.match(/<video[^>]+src=["']([^"']+)["']/i)
+
+      if (imgSrc) {
+        const alt = html.match(/alt=["']([^"']*)["']/i)?.[1] || ''
         elements.push(
-          <div key={`img-${elements.length}`} className="my-4">
+          <figure key={key++} className="my-10">
             <img
-              src={fullUrl}
-              alt={alt || 'Изображение'}
-              style={{ 
-                width: '100%', 
-                height: 'auto',
-                display: 'block',
-                maxWidth: '100%'
-              }}
+              src={getFullImageUrl(imgSrc[1]) || imgSrc[1]}
+              alt={alt}
+              loading="lazy"
+              className="w-full"
               onError={(e) => {
-                console.error('❌ [renderMarkdown] Ошибка загрузки изображения:', fullUrl)
-                e.target.style.display = 'none'
-              }}
-              onLoad={() => {
-                console.log('✅ [renderMarkdown] Изображение загружено:', fullUrl)
+                e.currentTarget.style.display = 'none'
               }}
             />
-            {alt && alt !== 'Изображение' && (
-              <p className="text-center text-sm text-gray-500 mt-2 italic">{alt}</p>
-            )}
-          </div>
+            {alt && <figcaption className="label mt-3">{alt}</figcaption>}
+          </figure>
         )
-      }
-      i++
-      continue
-    }
-
-    // Видео с кастомным плеером
-    if (trimmedLine.match(/\[🎥 Video\]\(.*?\)/)) {
-      const videoMatch = trimmedLine.match(/\[🎥 Video(?:\s*:\s*([^\]]+))?\]\(([^)]+)\)/)
-      if (videoMatch) {
-        const [, title, url] = videoMatch
+      } else if (videoSrc) {
+        const title = html.match(/title=["']([^"']*)["']/i)?.[1] || 'Видео'
         elements.push(
-          <div key={`video-${elements.length}`} className="my-6">
-            <CustomVideoPlayer 
-              src={url} 
-              title={title || 'Video'}
-            />
+          <div key={key++} className="my-10">
+            <CustomVideoPlayer src={videoSrc[1]} title={title} />
           </div>
         )
       }
+
+      i = cursor + 1
+      continue
+    }
+
+    /* ── Абзац ───────────────────────────────────────────────── */
+    // Мягкие переносы внутри абзаца склеиваются, как того требует Markdown
+    const paragraph = []
+    while (i < lines.length && lines[i].trim() && !isBlockStart(lines[i])) {
+      paragraph.push(lines[i].trim())
       i++
-      continue
     }
 
-    // HTML элементы (могут быть многострочными)
-    if (trimmedLine.includes('<img') || trimmedLine.includes('<video')) {
-      // Собираем весь HTML тег (может быть многострочным)
-      let htmlContent = trimmedLine
-      let currentLine = i
-      
-      // Если тег не закрыт, собираем следующие строки
-      while (currentLine < lines.length && !htmlContent.includes('>')) {
-        currentLine++
-        if (currentLine < lines.length) {
-          htmlContent += ' ' + lines[currentLine].trim()
-        }
-      }
-      
-      // Обработка изображений
-      if (htmlContent.includes('<img')) {
-        const imgMatch = htmlContent.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
-        if (imgMatch) {
-          const src = imgMatch[1]
-          const fullSrc = getFullImageUrl(src)
-          
-          console.log('🖼️ [renderMarkdown] Обрабатываем HTML изображение:', {
-            original: src,
-            fullSrc: fullSrc,
-            htmlContent: htmlContent
-          })
-          
-          const altMatch = htmlContent.match(/alt=["']([^"']*)["']/i)
-          const alt = altMatch ? altMatch[1] : 'Изображение'
-          
-          elements.push(
-            <div key={`img-${elements.length}`} className="my-4">
-              <img
-                src={fullSrc}
-                alt={alt}
-                style={{ 
-                  width: '100%', 
-                  height: 'auto',
-                  display: 'block',
-                  maxWidth: '100%'
-                }}
-                onError={(e) => {
-                  console.error('❌ [renderMarkdown] Ошибка загрузки HTML изображения:', fullSrc)
-                  e.target.style.display = 'none'
-                }}
-                onLoad={() => {
-                  console.log('✅ [renderMarkdown] HTML изображение загружено:', fullSrc)
-                }}
-              />
-              {alt && alt !== 'Изображение' && (
-                <p className="text-center text-sm text-gray-500 mt-2 italic">{alt}</p>
-              )}
-            </div>
-          )
-        }
-        i = currentLine + 1
-        continue
-      }
-      
-      // Обработка видео с кастомным плеером
-      if (htmlContent.includes('<video')) {
-        const videoMatch = htmlContent.match(/<video[^>]+src=["']([^"']+)["'][^>]*>/i)
-        if (videoMatch) {
-          const src = videoMatch[1]
-          const titleMatch = htmlContent.match(/title=["']([^"']*)["']/i)
-          const title = titleMatch ? titleMatch[1] : 'Video'
-          
-          elements.push(
-            <div key={`video-${elements.length}`} className="my-6">
-              <CustomVideoPlayer 
-                src={src}
-                title={title}
-              />
-            </div>
-          )
-        }
-        i = currentLine + 1
-        continue
-      }
-      
-      i = currentLine + 1
-      continue
+    if (paragraph.length > 0) {
+      elements.push(
+        <p key={key++} className="leading-relaxed">
+          {processInlineMarkdown(paragraph.join(' '))}
+        </p>
+      )
+    } else {
+      i++
     }
-
-    // Обычные параграфы
-    elements.push(
-      <p key={`p-${elements.length}`} className="mb-6 text-gray-700 leading-relaxed">
-        {processInlineMarkdown(trimmedLine)}
-      </p>
-    )
-    i++
   }
 
   return elements
 }
 
-/**
- * Улучшенная обработка inline Markdown элементов
- */
-export const processInlineMarkdown = (text) => {
-  // Безопасная проверка и конвертация в строку
-  if (!text) return ''
-  if (typeof text !== 'string') {
-    text = String(text)
-  }
-
-  console.log('🔍 processInlineMarkdown input:', text)
-
-  const elements = []
-  let lastIndex = 0
-  const patterns = []
-
-  // Жирный текст с ++ синтаксисом
-  const boldRegex = /\+\+(.*?)\+\+/g
-  let match
-  while ((match = boldRegex.exec(text)) !== null) {
-    patterns.push({
-      type: 'bold',
-      start: match.index,
-      end: match.index + match[0].length,
-      content: match[1]
-    })
-  }
-
-  // Курсив с * синтаксисом (только если не часть жирного)
-  const italicRegex = /\*(.*?)\*/g
-  while ((match = italicRegex.exec(text)) !== null) {
-    const isPartOfBold = patterns.some(p => 
-      p.type === 'bold' && p.start <= match.index && p.end >= match.index + match[0].length
-    )
-    if (!isPartOfBold) {
-      patterns.push({
-        type: 'italic',
-        start: match.index,
-        end: match.index + match[0].length,
-        content: match[1]
-      })
-    }
-  }
-
-  // Ссылки
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
-  while ((match = linkRegex.exec(text)) !== null) {
-    patterns.push({
-      type: 'link',
-      start: match.index,
-      end: match.index + match[0].length,
-      content: match[1],
-      url: match[2]
-    })
-  }
-
-  // Inline код
-  const codeRegex = /`([^`]+)`/g
-  while ((match = codeRegex.exec(text)) !== null) {
-    patterns.push({
-      type: 'code',
-      start: match.index,
-      end: match.index + match[0].length,
-      content: match[1]
-    })
-  }
-
-  // HTML span теги (для цветного текста)
-  // Простой regex для span тегов
-  const spanRegex = /<span\s+style="([^"]+)">([^<]*)<\/span>/gi
-  let spanMatch
-  while ((spanMatch = spanRegex.exec(text)) !== null) {
-    console.log('🎨 Found span:', spanMatch[0], 'style:', spanMatch[1], 'content:', spanMatch[2])
-    patterns.push({
-      type: 'span',
-      start: spanMatch.index,
-      end: spanMatch.index + spanMatch[0].length,
-      style: spanMatch[1],
-      content: spanMatch[2]
-    })
-  }
-
-  // Сортируем по позиции
-  patterns.sort((a, b) => a.start - b.start)
-
-  // Строим результат
-  patterns.forEach((pattern, index) => {
-    // Добавляем текст перед паттерном
-    if (pattern.start > lastIndex) {
-      elements.push(text.substring(lastIndex, pattern.start))
-    }
-
-    // Добавляем отформатированный элемент
-    switch (pattern.type) {
-      case 'bold':
-        elements.push(<strong key={`bold-${index}`} className="font-bold text-gray-900">{pattern.content}</strong>)
-        break
-      case 'italic':
-        elements.push(<em key={`italic-${index}`} className="italic text-gray-800">{pattern.content}</em>)
-        break
-      case 'link':
-        elements.push(
-          <a key={`link-${index}`} href={pattern.url} target="_blank" rel="noopener noreferrer" 
-             className="text-blue-600 hover:text-blue-800 underline">
-            {pattern.content}
-          </a>
-        )
-        break
-      case 'code':
-        elements.push(
-          <code key={`code-${index}`} className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
-            {pattern.content}
-          </code>
-        )
-        break
-      case 'span':
-        // Парсим style строку в объект
-        const styleObj = {}
-        pattern.style.split(';').forEach(rule => {
-          const [prop, value] = rule.split(':').map(s => s.trim())
-          if (prop && value) {
-            // Конвертируем CSS свойства в camelCase для React
-            const camelProp = prop.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-            styleObj[camelProp] = value
-          }
-        })
-        elements.push(
-          <span key={`span-${index}`} style={styleObj}>
-            {pattern.content}
-          </span>
-        )
-        break
-    }
-
-    lastIndex = pattern.end
-  })
-
-  // Добавляем оставшийся текст
-  if (lastIndex < text.length) {
-    elements.push(text.substring(lastIndex))
-  }
-
-  return elements.length > 0 ? <>{elements}</> : text
+/** Начинается ли строка с блочной конструкции */
+function isBlockStart(line) {
+  const t = line.trim()
+  return (
+    t.startsWith('```') ||
+    t.startsWith('>') ||
+    /^#{1,6}\s/.test(t) ||
+    /^[-*+]\s/.test(t) ||
+    /^\d+[.)]\s/.test(t) ||
+    /^(-{3,}|\*{3,}|_{3,})$/.test(t) ||
+    /^!\[/.test(t) ||
+    t.startsWith('<img') ||
+    t.startsWith('<video')
+  )
 }
 
 /**
- * Быстрое преобразование Markdown в HTML (для простых случаев)
+ * Быстрое преобразование Markdown → HTML.
+ * Используется там, где нужен не React-узел, а строка (экспорт поста).
+ * Экранирование обязательно: строка попадает в dangerouslySetInnerHTML.
  */
 export const markdownToHtml = (markdown) => {
-  // Безопасная проверка
   if (!markdown) return ''
-  if (typeof markdown !== 'string') {
-    markdown = String(markdown)
-  }
-  
-  return markdown
-    // Заголовки
-    .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold text-gray-900 mb-4">$1</h1>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold text-gray-800 mb-3">$1</h2>')
-    .replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold text-gray-700 mb-2">$1</h3>')
-    
-    // Жирный текст
-    .replace(/\+\+(.*?)\+\+/g, '<strong class="font-bold">$1</strong>')
-    
-    // Курсив
-    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-    
-    // Код
-    .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-2 py-1 rounded text-sm font-mono">$1</code>')
-    
-    // Ссылки
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">$1</a>')
-    
-    // Изображения
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto rounded-lg shadow-lg my-4" />')
-    
-    // Цитаты
-    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-gray-300 pl-4 py-2 my-4 bg-gray-50 italic text-gray-700">$1</blockquote>')
-    
-    // Списки
-    .replace(/^- (.*$)/gm, '<li class="text-gray-700">$1</li>')
-    .replace(/^(\d+)\. (.*$)/gm, '<li class="text-gray-700">$2</li>')
-    
-    // Параграфы
-    .replace(/\n\n/g, '</p><p class="mb-4 text-gray-700 leading-relaxed">')
-    .replace(/^/, '<p class="mb-4 text-gray-700 leading-relaxed">')
+  const source = typeof markdown === 'string' ? markdown : String(markdown)
+
+  const escaped = source
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  return escaped
+    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+    .replace(/(\*\*|\+\+|__)(.+?)\1/g, '<strong>$2</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(
+      /\[([^\]]+)\]\(([^)\s]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    )
+    .replace(/^&gt; (.*)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/^/, '<p>')
     .replace(/$/, '</p>')
 }

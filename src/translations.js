@@ -1,135 +1,37 @@
-export const translations = {
+import { translations as base } from './translations/index.js'
+
+/*
+ * В проекте лежали ДВА словаря:
+ *   src/translations.js        — 130 строк, только en
+ *   src/translations/index.js  — ~1150 строк, en / ru / uz
+ *
+ * Все 13 мест импортировали `'../translations'`, а сборщик при таком
+ * пути выбирает файл, а не каталог, — то есть выигрывал короткий словарь.
+ * Большой файл был мёртвым кодом, а в админке ключи из него отображались
+ * как undefined.
+ *
+ * Теперь модуль один: за основу берётся полный словарь, поверх него
+ * ложатся правки ниже. Ничего не потеряно, разночтений больше нет.
+ */
+
+const overrides = {
   en: {
-    // Site Info
-    muhammadaliBlog: 'Muhammadali Izzatullaev Blog',
-    
-    // Navigation
-    blogs: 'Blogs',
-    news: 'News',
+    muhammadaliBlog: 'Muhammadali Izzatullaev',
     aboutMeBtn: 'About Me',
     adminPanelButton: 'Admin Panel',
-    
-    // Admin Panel
-    adminPanel: 'Admin Panel',
-    adminSubtitle: 'Manage your blog content',
-    logout: 'Logout',
-    
-    // Tabs
-    blog: 'Blog',
-    news: 'News',
-    tutorial: 'Tutorial',
-    profileSettings: 'Profile Settings',
-    mceEditor: 'MCE Editor',
-    aboutMePage: 'About Me',
-    siteSettings: 'Site Settings',
-    managePosts: 'Manage Posts',
-    
-    // Post Management
-    createNewPost: 'Create New Post',
-    category: 'Category',
-    preview: 'Preview',
-    edit: 'Edit',
-    publish: 'Publish',
-    makeDraft: 'Make Draft',
-    markdownEditor: 'Markdown Editor',
-    noContentToPreview: 'No content to preview',
-    enhancedMarkdownPlaceholderText: 'Write your content here using Markdown...',
-    
-    // Post Status
-    published: 'Published',
-    draft: 'Draft',
-    
-    // Profile
-    profileName: 'Name',
-    profilePosition: 'Position',
-    profileAbout: 'About Me',
-    profileAvatar: 'Avatar',
-    profileSocial: 'Social Media',
-    profileYouTube: 'YouTube',
-    profileGitHub: 'GitHub',
-    profileLinkedIn: 'LinkedIn',
-    profileTelegram: 'Telegram',
-    profileTelegramChannel: 'Telegram Channel',
-    saveProfile: 'Save Profile',
-    
-    // About Me Page
-    aboutMeTitle: 'Page Title',
-    aboutMeImage: 'Image URL',
-    aboutMeBirthDate: 'Birth Date',
-    aboutMeLocation: 'Location',
-    aboutMeContent: 'Content',
-    aboutMeSkills: 'Skills',
-    aboutMeExperience: 'Work Experience',
-    aboutMeEducation: 'Education',
-    aboutMeInterests: 'Interests',
-    saveAboutMePage: 'Save About Me Page',
-    
-    // Site Settings
-    basicSettings: 'Basic Settings',
-    siteName: 'Site Name',
-    siteDescription: 'Site Description',
-    
-    // Manage Posts
-    managePostsSubtitle: 'View and manage all your posts',
-    totalPosts: 'Total Posts',
-    searchByTitle: 'Search by title...',
-    allCategories: 'All Categories',
-    clearFilters: 'Clear Filters',
-    clearAllPosts: 'Clear All Posts',
-    confirmDeleteAllPosts: 'Are you sure you want to delete ALL posts? This action cannot be undone!',
-    noPostsFound: 'No posts found',
-    noPostsOnThisPage: 'No posts on this page',
-    previous: 'Previous',
-    next: 'Next',
-    
-    // Post Actions
-    editPost: 'Edit Post',
-    viewPostTitle: 'View Post',
-    postExcerpt: 'Excerpt',
-    postContent: 'Content',
-    postCategory: 'Category',
-    postStatus: 'Status',
-    postCategoryLabel: 'Category',
-    postStatusLabel: 'Status',
-    postDate: 'Date',
-    cancel: 'Cancel',
-    saveChanges: 'Save Changes',
-    editThisPost: 'Edit This Post',
-    
-    // Messages
-    pleaseFillContent: 'Please fill in the post content',
-    postCreatedSuccessfully: 'Post created successfully!',
-    profileUpdatedSuccessfully: 'Profile updated successfully!',
-    settingsUpdatedSuccessfully: 'Settings updated successfully!',
-    aboutMeUpdatedSuccessfully: 'About Me page updated successfully!',
-    errorUpdatingProfile: 'Error updating profile',
-    errorUpdatingSettings: 'Error updating settings',
-    errorUpdatingAboutMe: 'Error updating About Me page',
-    confirmDeletePost: 'Are you sure you want to delete this post?',
-    saving: 'Saving...',
-    
-    // Placeholders
-    enterPageTitle: 'Enter page title',
-    enterImageUrl: 'Enter image URL',
-    enterLocation: 'Enter location',
-    enterUsername: '@username',
-    writeAboutYourself: 'Write about yourself...',
-    markdownSyntaxHint: 'You can use Markdown syntax',
-    skillsWillBeSaved: 'Skills will be saved as a list',
-    enterSkill: 'Enter skill',
-    addSkill: 'Add Skill',
-    describeWorkExperience: 'Describe your work experience...',
-    describeEducation: 'Describe your education...',
-    describeInterests: 'Describe your interests...',
-    
-    // Other
-    noTitle: 'No Title',
-    noDescription: 'No Description',
-    enhancedMarkdownEditor: 'Enhanced Markdown Editor',
-    enhancedMarkdownEditorSubtitle: 'Create beautiful documents with enhanced Markdown support',
-    enhancedMarkdownPlaceholder: 'Start writing...',
-    profileSettingsSubtitle: 'Configure your profile information',
-    aboutMePageSubtitle: 'Configure your information for the About Me page',
-    siteSettingsSubtitle: 'Configure the main parameters of your site'
-  }
+  },
+  ru: {
+    muhammadaliBlog: 'Muhammadali Izzatullaev',
+    aboutMeBtn: 'Об авторе',
+    adminPanelButton: 'Админ-панель',
+  },
+  uz: {
+    muhammadaliBlog: 'Muhammadali Izzatullaev',
+  },
 }
+
+export const translations = Object.fromEntries(
+  Object.entries(base).map(([lang, dict]) => [lang, { ...dict, ...(overrides[lang] || {}) }])
+)
+
+export default translations

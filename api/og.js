@@ -1,17 +1,25 @@
-// Vercel Edge Function для OG тегов
-const supabaseUrl = 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmcHBraHdxbmxrcGplbW1vZXhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDAyNDcsImV4cCI6MjA3MTE3NjI0N30.KNDzI-PDysx7SJoFWtSqWyb5ZejTL1QVa5CwHw1IgFE'
+// Vercel Edge Function для OG-тегов
+//
+// Ключ и URL раньше были захардкожены прямо в файле и лежали в публичном
+// репозитории. Теперь берутся из переменных окружения Vercel.
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
 export const config = {
   runtime: 'edge',
 }
 
 export default async function handler(req) {
+  if (!supabaseUrl || !supabaseKey) {
+    return new Response('Supabase credentials are not configured', { status: 500 })
+  }
+
   const url = new URL(req.url)
   const postId = url.searchParams.get('postId')
 
-  if (!postId) {
-    return new Response('Missing postId', { status: 400 })
+  // Только целое число: строка вида `1 or 1=1` не должна попадать в запрос
+  if (!postId || !/^\d+$/.test(postId)) {
+    return new Response('Missing or invalid postId', { status: 400 })
   }
 
   try {
