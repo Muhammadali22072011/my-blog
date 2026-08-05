@@ -209,13 +209,13 @@ function Admin() {
   if (!dataContext) {
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center px-4 py-8">
-        <div className="max-w-lg mx-auto bg-white rounded-xl shadow-sm border border-red-200 p-8 text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+        <div className="max-w-lg mx-auto bg-white rounded shadow-sm border border-red-200 p-8 text-center">
+          <div className="text-terra text-6xl mb-4">⚠️</div>
           <h1 className="text-xl font-bold text-red-900 mb-2">Data Context Error</h1>
           <p className="text-red-700 mb-4">Failed to load data context.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="px-4 py-2 bg-terra text-white rounded-lg hover:bg-red-700"
           >
             Reload Page
           </button>
@@ -228,13 +228,13 @@ function Admin() {
   if (!addPost || typeof addPost !== 'function') {
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center px-4 py-8">
-        <div className="max-w-lg mx-auto bg-white rounded-xl shadow-sm border border-red-200 p-8 text-center">
-          <div className="text-red-500 text-6xl mb-4">❌</div>
+        <div className="max-w-lg mx-auto bg-white rounded shadow-sm border border-red-200 p-8 text-center">
+          <div className="text-terra text-6xl mb-4">❌</div>
           <h1 className="text-xl font-bold text-red-900 mb-2">Critical Error</h1>
           <p className="text-red-700 mb-4">addPost function is not available. Context may not be properly initialized.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="px-4 py-2 bg-terra text-white rounded-lg hover:bg-red-700"
           >
             Reload Page
           </button>
@@ -247,7 +247,7 @@ function Admin() {
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center px-4 py-8">
-        <div className="max-w-lg mx-auto bg-white rounded-xl shadow-sm border border-blue-200 p-8 text-center">
+        <div className="max-w-lg mx-auto bg-white rounded shadow-sm border border-blue-200 p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h1 className="text-xl font-bold text-blue-900 mb-2">Loading Admin Panel...</h1>
           <p className="text-blue-700">Please wait while we initialize the database connection.</p>
@@ -262,8 +262,8 @@ function Admin() {
   if (!dbInitialized) {
     return (
       <div className="min-h-screen bg-yellow-50 flex items-center justify-center px-4 py-8">
-        <div className="max-w-lg mx-auto bg-white rounded-xl shadow-sm border border-yellow-200 p-8 text-center">
-          <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+        <div className="max-w-lg mx-auto bg-white rounded shadow-sm border border-yellow-200 p-8 text-center">
+          <div className="text-saffron text-6xl mb-4">⚠️</div>
           <h1 className="text-xl font-bold text-yellow-900 mb-2">Database Not Initialized</h1>
           <p className="text-yellow-700 mb-4">The database connection is not ready yet. Please wait or check the console for errors.</p>
           <div className="mt-4 text-sm text-yellow-600">
@@ -819,7 +819,7 @@ function Admin() {
     <div className="max-w-6xl mx-auto px-4">
       {/* Success Notifications */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg z-50 animate-fade-in">
           {successMessage}
         </div>
       )}
@@ -835,7 +835,7 @@ function Admin() {
         <div className="flex gap-3">
           <button
             onClick={handleLogout}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium shadow-sm"
+            className="px-6 py-3 bg-terra text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium shadow-sm"
           >
             {t.logout}
           </button>
@@ -1127,7 +1127,7 @@ function Admin() {
               {/* Current Avatar Preview */}
               <div className="mb-4">
                 <div className="flex items-center space-x-4">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg overflow-hidden">
+                  <div className="w-24 h-24 bg-paper-deep rounded-full flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
                     {profileData.avatarFile ? (
                       <img
                         src={URL.createObjectURL(profileData.avatarFile)}
@@ -1332,7 +1332,7 @@ function Admin() {
                 <div className="text-gray-600 dark:text-gray-400">Lines</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-600">{mceContent.split(' ').filter(word => word.trim()).length}</div>
+                <div className="text-2xl font-bold text-tile">{mceContent.split(' ').filter(word => word.trim()).length}</div>
                 <div className="text-gray-600 dark:text-gray-400">Words</div>
               </div>
             </div>
@@ -1470,7 +1470,7 @@ function Admin() {
                     <button
                       type="button"
                       onClick={() => removeSkill(index)}
-                      className="px-3 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                      className="px-3 py-3 bg-terra text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
                       disabled={aboutMeData.skills.length <= 1}
                     >
                       🗑️
@@ -1757,7 +1757,7 @@ function Admin() {
                       handleClearAllPosts()
                     }
                   }}
-                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-medium shadow-sm"
+                  className="px-6 py-3 bg-terra text-white rounded-lg hover:bg-red-700 transition-all duration-200 font-medium shadow-sm"
                 >
                   🗑️ {t.clearAllPosts} ({filteredPosts.length})
                 </button>
@@ -1795,14 +1795,14 @@ function Admin() {
                   return (
                     <div
                       key={post.id}
-                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-500"
+                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-6 hover: transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-500"
                     >
                       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                         {/* Post Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-3 mb-3">
                             {/* Status indicator */}
-                            <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${post.status === 'published' ? 'bg-green-500' : 'bg-yellow-500'
+                            <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${post.status === 'published' ? 'bg-green-500' : 'bg-saffron'
                               }`} />
 
                             <div className="flex-1 min-w-0">

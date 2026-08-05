@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../config/supabase'
 
 const REACTIONS = [
-  { emoji: '👍', name: 'like' },
-  { emoji: '❤️', name: 'love' },
-  { emoji: '🔥', name: 'fire' },
-  { emoji: '👏', name: 'clap' },
-  { emoji: '🤔', name: 'think' },
-  { emoji: '🚀', name: 'rocket' }
+  { emoji: '👍', name: 'like', title: 'Полезно' },
+  { emoji: '❤️', name: 'love', title: 'Отлично' },
+  { emoji: '🔥', name: 'fire', title: 'Огонь' },
+  { emoji: '👏', name: 'clap', title: 'Спасибо' },
+  { emoji: '🤔', name: 'think', title: 'Задумался' },
+  { emoji: '🚀', name: 'rocket', title: 'Вдохновляет' },
 ]
 
 function Reactions({ postId }) {
@@ -118,39 +118,41 @@ function Reactions({ postId }) {
 
   if (loading) {
     return (
-      <div className="flex gap-2 animate-pulse">
-        {REACTIONS.map(r => (
-          <div key={r.name} className="w-12 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+      <div className="flex flex-wrap gap-3" aria-hidden="true">
+        {REACTIONS.map((r) => (
+          <span key={r.name} className="skeleton h-8 w-16" />
         ))}
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 sm:gap-4 w-full">
-      <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
-        {totalReactions > 0 ? `${totalReactions} reaction${totalReactions !== 1 ? 's' : ''}` : 'Be the first to react!'}
+    <div>
+      <p className="label">
+        {totalReactions > 0 ? `Отклики · ${totalReactions}` : 'Как вам материал?'}
       </p>
-      <div className="flex flex-wrap justify-center gap-2 w-full max-w-md">
-        {REACTIONS.map(({ emoji, name }) => (
-          <button
-            key={name}
-            onClick={() => handleReaction(name)}
-            className={`
-              flex items-center gap-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full transition-all duration-200 touch-manipulation
-              ${userReaction === name 
-                ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 scale-105 sm:scale-110' 
-                : 'bg-gray-100 dark:bg-gray-800 border-2 border-transparent hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95'
-              }
-              ${animating === name ? 'scale-110 sm:scale-125' : ''}
-            `}
-          >
-            <span className={`text-lg sm:text-xl ${animating === name ? 'animate-bounce' : ''}`}>{emoji}</span>
-            {reactions[name] > 0 && (
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[1rem] text-center">{reactions[name]}</span>
-            )}
-          </button>
-        ))}
+
+      <div className="mt-4 flex flex-wrap gap-2.5">
+        {REACTIONS.map(({ emoji, name, title }) => {
+          const active = userReaction === name
+          return (
+            <button
+              key={name}
+              onClick={() => handleReaction(name)}
+              aria-pressed={active}
+              aria-label={title}
+              title={title}
+              className={`flex items-center gap-2 border px-3 py-1.5 transition-all ${
+                active
+                  ? 'border-tile text-tile'
+                  : 'border-ink/20 text-ink-soft hover:border-ink/50 hover:text-ink'
+              } ${animating === name ? 'translate-y-[-2px]' : ''}`}
+            >
+              <span className="text-base leading-none">{emoji}</span>
+              <span className="folio numeric">{reactions[name] || 0}</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )

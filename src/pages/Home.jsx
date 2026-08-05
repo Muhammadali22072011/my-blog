@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { useData } from '../context/DataContext'
 import { ProfileSkeleton } from '../components/Skeleton'
 import SEOHead from '../components/SEOHead'
-import { getPostTitle, getReadingTime, formatDateRu } from '../utils/postFormat'
+import { getPostTitle, getReadingTime, formatDateRu, telegramHandle } from '../utils/postFormat'
 
 /**
  * Титульная полоса журнала.
@@ -52,7 +52,7 @@ function Home() {
     profile?.aboutMe ||
     'Пишу о нетехническом в техническом мире.'
   const avatar = profile?.avatar_url || profile?.avatarUrl
-  const channel = profile?.telegram_channel?.replace('@', '')
+  const channel = telegramHandle(profile?.telegram_channel)
 
   // Имя разбивается на строки вручную — так набор держит выбранный ритм
   const nameParts = name.split(' ')

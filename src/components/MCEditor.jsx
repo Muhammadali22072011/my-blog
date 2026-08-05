@@ -266,7 +266,7 @@ function MCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Image modal */}
       {showImageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
+          <div className="bg-white rounded p-6 w-96">
             <h3 className="text-xl font-bold mb-4">{t.insertImage}</h3>
             <input
               type="url"
@@ -296,7 +296,7 @@ function MCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Video modal */}
       {showVideoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
+          <div className="bg-white rounded p-6 w-96">
             <h3 className="text-xl font-bold mb-4">{t.insertVideo}</h3>
             <input
               type="url"
@@ -308,7 +308,7 @@ function MCEditor({ value, onChange, placeholder, className = "" }) {
             <div className="flex gap-2">
               <button
                 onClick={insertVideo}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="px-4 py-2 bg-tile text-white rounded-lg hover:bg-purple-700"
               >
                 {t.insert}
               </button>
@@ -334,7 +334,7 @@ function MCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Instructions Modal */}
       {showInstructions && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-[800px] max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded p-6 w-[800px] max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-gray-900">📖 {t.instructionsTitle}</h3>
               <button

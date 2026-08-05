@@ -102,7 +102,7 @@ function BulkSEO({ posts, onUpdatePost }) {
   return (
     <div className="space-y-6">
       {/* Заголовок */}
-      <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg p-6 text-white">
+      <div className="bg-tile rounded-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">⚡ Массовая SEO оптимизация</h2>
         <p className="text-purple-100">Автоматическая оптимизация всех постов одной кнопкой</p>
       </div>
@@ -126,7 +126,7 @@ function BulkSEO({ posts, onUpdatePost }) {
           <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Без SEO</div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+          <div className="text-3xl font-bold text-tile dark:text-purple-400">
             {posts.filter(p => p.status === 'published').length}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Опубликовано</div>
@@ -137,7 +137,7 @@ function BulkSEO({ posts, onUpdatePost }) {
       <button
         onClick={handleBulkOptimize}
         disabled={isProcessing || posts.length === 0}
-        className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-bold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        className="w-full px-6 py-4 bg-tile text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
       >
         {isProcessing ? (
           <>
@@ -159,13 +159,13 @@ function BulkSEO({ posts, onUpdatePost }) {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Обработка постов...
             </span>
-            <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+            <span className="text-sm font-bold text-tile dark:text-purple-400">
               {progress}%
             </span>
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-purple-600 to-pink-600 h-4 rounded-full transition-all duration-300"
+              className="bg-tile h-4 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>

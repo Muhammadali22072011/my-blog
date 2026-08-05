@@ -80,7 +80,7 @@ function VideoGallery({ onVideoSelect, className = '' }) {
   if (error) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <div className="text-red-500 text-4xl mb-4">⚠️</div>
+        <div className="text-terra text-4xl mb-4">⚠️</div>
         <p className="text-red-600 mb-4">{error}</p>
         <button
           onClick={refreshVideos}
@@ -187,7 +187,7 @@ function VideoGallery({ onVideoSelect, className = '' }) {
                 e.stopPropagation()
                 handleDeleteVideo(video)
               }}
-              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 flex items-center justify-center"
+              className="absolute top-2 right-2 w-6 h-6 bg-terra text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-terra flex items-center justify-center"
               title="Удалить видео"
             >
               ×

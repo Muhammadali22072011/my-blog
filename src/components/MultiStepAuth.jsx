@@ -212,9 +212,9 @@ function MultiStepAuth({ onSuccess }) {
 
   if (step === 2) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4">
         <div className="max-w-md w-full">
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+          <div className="bg-paper-deep rounded p-8 border border-ink/15">
             <form onSubmit={handleMathSubmit} className="space-y-6">
               {/* Honeypot - скрытое поле */}
               <input
@@ -227,20 +227,20 @@ function MultiStepAuth({ onSuccess }) {
               />
               
               <div className="text-center">
-                <div className="text-5xl font-light text-slate-300 mb-6 tracking-wide">
+                <div className="text-5xl font-light text-ink-soft mb-6 tracking-wide">
                   {mathProblem.a} {mathProblem.op} {mathProblem.b}
                 </div>
                 <input
                   type="number"
                   value={mathAnswer}
                   onChange={(e) => setMathAnswer(e.target.value)}
-                  className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white text-center text-2xl font-light placeholder-slate-500 focus:outline-none focus:border-white/20"
+                  className="w-full px-6 py-4 bg-paper-deep border border-ink/15 rounded text-white text-center text-2xl font-light placeholder:text-ink-faint focus:outline-none focus:border-ink/20"
                   placeholder="="
                   required
                   autoFocus
                 />
               </div>
-              <button type="submit" className="w-full py-3 bg-white/10 text-white font-light rounded-2xl hover:bg-white/20 transition-all">
+              <button type="submit" className="w-full py-3 bg-paper-deep text-white font-light rounded hover:bg-tile hover:text-paper transition-all">
                 →
               </button>
             </form>
@@ -252,16 +252,16 @@ function MultiStepAuth({ onSuccess }) {
 
   if (step === 3) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4">
         <div className="max-w-md w-full">
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+          <div className="bg-paper-deep rounded p-8 border border-ink/15">
             <form onSubmit={handleSecretSubmit} className="space-y-6">
               <input type="text" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} style={{ position: 'absolute', left: '-9999px' }} tabIndex={-1} autoComplete="off" />
               <div className="text-center">
-                <div className="text-6xl font-light text-slate-300 mb-8">{secretQuestion.q}</div>
-                <input type="text" value={secretAnswer} onChange={(e) => setSecretAnswer(e.target.value)} className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white text-center text-xl font-light placeholder-slate-500 focus:outline-none focus:border-white/20" placeholder="..." required autoFocus />
+                <div className="text-6xl font-light text-ink-soft mb-8">{secretQuestion.q}</div>
+                <input type="text" value={secretAnswer} onChange={(e) => setSecretAnswer(e.target.value)} className="w-full px-6 py-4 bg-paper-deep border border-ink/15 rounded text-white text-center text-xl font-light placeholder:text-ink-faint focus:outline-none focus:border-ink/20" placeholder="..." required autoFocus />
               </div>
-              <button type="submit" className="w-full py-3 bg-white/10 text-white font-light rounded-2xl hover:bg-white/20 transition-all">→</button>
+              <button type="submit" className="w-full py-3 bg-paper-deep text-white font-light rounded hover:bg-tile hover:text-paper transition-all">→</button>
             </form>
           </div>
         </div>
@@ -271,17 +271,17 @@ function MultiStepAuth({ onSuccess }) {
 
   if (step === 4) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4">
         <div className="max-w-md w-full">
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+          <div className="bg-paper-deep rounded p-8 border border-ink/15">
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                <button key={num} onClick={() => handlePatternClick(num)} className={`aspect-square rounded-xl text-xl font-light transition-all ${pattern.includes(num) ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-500 hover:bg-white/10'}`}>{num}</button>
+                <button key={num} onClick={() => handlePatternClick(num)} className={`aspect-square rounded text-xl font-light transition-all ${pattern.includes(num) ? 'bg-white/20 text-ink' : 'bg-paper-deep text-ink-soft hover:bg-paper-deep'}`}>{num}</button>
               ))}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setPattern([])} className="flex-1 py-3 bg-white/5 text-white font-light rounded-xl hover:bg-white/10 transition-all">↺</button>
-              <button onClick={handlePatternSubmit} disabled={pattern.length === 0} className="flex-1 py-3 bg-white/10 text-white font-light rounded-xl hover:bg-white/20 transition-all disabled:opacity-30">→</button>
+              <button onClick={() => setPattern([])} className="flex-1 py-3 bg-paper-deep text-white font-light rounded hover:bg-paper-deep transition-all">↺</button>
+              <button onClick={handlePatternSubmit} disabled={pattern.length === 0} className="flex-1 py-3 bg-paper-deep text-white font-light rounded hover:bg-tile hover:text-paper transition-all disabled:opacity-30">→</button>
             </div>
           </div>
         </div>
@@ -291,22 +291,22 @@ function MultiStepAuth({ onSuccess }) {
 
   if (step === 5) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4">
         <div className="max-w-md w-full">
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+          <div className="bg-paper-deep rounded p-8 border border-ink/15">
             <div className="mb-6 min-h-[60px] flex items-center justify-center gap-2">
               {sequence.map((num, i) => (
-                <span key={i} className="text-2xl font-light text-white">{num}{i < sequence.length - 1 && <span className="text-slate-500 mx-1">,</span>}</span>
+                <span key={i} className="text-2xl font-light text-ink">{num}{i < sequence.length - 1 && <span className="text-ink-soft mx-1">,</span>}</span>
               ))}
             </div>
             <div className="grid grid-cols-5 gap-2 mb-6">
               {[1, 2, 3, 5, 8, 13, 21, 34].map((num) => (
-                <button key={num} onClick={() => handleSequenceClick(num)} className="aspect-square rounded-xl bg-white/5 text-white font-light hover:bg-white/10 transition-all">{num}</button>
+                <button key={num} onClick={() => handleSequenceClick(num)} className="aspect-square rounded bg-paper-deep text-white font-light hover:bg-paper-deep transition-all">{num}</button>
               ))}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setSequence([])} className="flex-1 py-3 bg-white/5 text-white font-light rounded-xl hover:bg-white/10 transition-all">↺</button>
-              <button onClick={handleSequenceSubmit} disabled={sequence.length === 0} className="flex-1 py-3 bg-white/10 text-white font-light rounded-xl hover:bg-white/20 transition-all disabled:opacity-30">✓</button>
+              <button onClick={() => setSequence([])} className="flex-1 py-3 bg-paper-deep text-white font-light rounded hover:bg-paper-deep transition-all">↺</button>
+              <button onClick={handleSequenceSubmit} disabled={sequence.length === 0} className="flex-1 py-3 bg-paper-deep text-white font-light rounded hover:bg-tile hover:text-paper transition-all disabled:opacity-30">✓</button>
             </div>
           </div>
         </div>

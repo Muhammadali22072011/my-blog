@@ -54,13 +54,13 @@ function CodeBlock({ code, language, filename }) {
   const lines = code?.split('\n') || []
 
   return (
-    <div className="rounded-xl overflow-hidden bg-gray-900 my-4 shadow-lg">
+    <div className="rounded overflow-hidden bg-gray-900 my-4">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-terra"></div>
+            <div className="w-3 h-3 rounded-full bg-saffron"></div>
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
           </div>
           {filename && (

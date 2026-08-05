@@ -1,148 +1,147 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import SEOHead from '../components/SEOHead'
 import supabaseService from '../services/SupabaseService'
 
+/**
+ * Проекты: нумерованный перечень вместо сетки карточек.
+ * Обложка ложится на изразцовую подложку со смещением.
+ */
 function Projects() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadProjects()
-  }, [])
+    let cancelled = false
 
-  const loadProjects = async () => {
-    try {
-      setLoading(true)
-      const data = await supabaseService.getActiveProjects()
-      setProjects(data)
-    } catch (error) {
-      console.error('Failed to load projects:', error)
-    } finally {
-      setLoading(false)
+    const load = async () => {
+      try {
+        const data = await supabaseService.getActiveProjects()
+        if (!cancelled) setProjects(data || [])
+      } catch (error) {
+        console.error('Не удалось загрузить проекты:', error)
+        if (!cancelled) setProjects([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-400">Loading projects...</div>
+      <div className="mx-auto max-w-6xl px-5 pt-20 sm:px-8">
+        <div className="skeleton h-3 w-24" />
+        <div className="skeleton mt-6 h-14 w-2/5" />
+        <div className="mt-14 space-y-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="skeleton h-28" />
+          ))}
+        </div>
       </div>
     )
   }
 
   return (
-    <>
-      <SEOHead 
-        title="Projects - My Portfolio"
-        description="Check out my latest projects and work"
-      />
-      
-      <div className="min-h-screen bg-white dark:bg-gray-900 py-12 px-4 transition-colors duration-300">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              My Projects
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              Here are some of my recent works
-            </p>
-          </motion.div>
+    <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <SEOHead title="Проекты" description="Работы и проекты Мухаммадали Иззатуллаева." />
 
-          {/* Projects Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-              >
-                {/* Project Image */}
-                {project.image_url && (
-                  <div className="relative h-48 overflow-hidden">
+      <header className="pb-12 pt-16 sm:pt-24">
+        <p className="label">
+          {projects.length} {projects.length === 1 ? 'работа' : 'работ'}
+        </p>
+        <h1 className="display mt-3 text-[clamp(2.5rem,9vw,6rem)]">Проекты</h1>
+      </header>
+
+      {projects.length === 0 ? (
+        <div className="rule-t py-24 text-center">
+          <p className="display text-3xl text-ink-faint">Пока пусто</p>
+          <p className="mt-3 text-ink-soft">Работы появятся здесь совсем скоро.</p>
+        </div>
+      ) : (
+        <div className="pb-24">
+          {projects.map((project, i) => (
+            <article key={project.id} className="rule-t grid grid-cols-12 gap-8 py-12">
+              <div className="col-span-12 sm:col-span-4 lg:col-span-3">
+                {project.image_url ? (
+                  <div className="relative">
+                    <div
+                      className="absolute inset-0 translate-x-2 translate-y-2 bg-tile"
+                      aria-hidden="true"
+                    />
                     <img
                       src={project.image_url}
                       alt={project.title}
-                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      className="relative aspect-[4/3] w-full object-cover grayscale transition-all duration-500 hover:grayscale-0"
+                      onError={(e) => {
+                        e.currentTarget.parentElement.style.display = 'none'
+                      }}
                     />
-                    {project.featured && (
-                      <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        Featured
-                      </div>
-                    )}
+                  </div>
+                ) : (
+                  <span className="folio">{String(i + 1).padStart(3, '0')}</span>
+                )}
+              </div>
+
+              <div className="col-span-12 sm:col-span-8 lg:col-span-9">
+                <div className="flex items-center gap-4">
+                  <span className="folio">{String(i + 1).padStart(3, '0')}</span>
+                  {project.featured && <span className="label text-saffron">Избранное</span>}
+                </div>
+
+                <h2 className="display mt-2 text-[1.75rem] leading-tight sm:text-[2.1rem]">
+                  {project.title}
+                </h2>
+
+                {project.description && (
+                  <p className="mt-4 max-w-measure leading-relaxed text-ink-soft">
+                    {project.description}
+                  </p>
+                )}
+
+                {project.tags?.length > 0 && (
+                  <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1">
+                    {project.tags.map((tag, idx) => (
+                      <span key={idx} className="label label-tile">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 )}
 
-                {/* Project Content */}
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {project.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {project.description}
-                  </p>
-
-                  {/* Tags */}
-                  {project.tags && project.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {project.tags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full text-sm"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                <div className="mt-7 flex flex-wrap gap-4">
+                  {project.github_url && (
+                    <a
+                      href={project.github_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary"
+                    >
+                      Исходники ↗
+                    </a>
                   )}
-
-                  {/* Links */}
-                  <div className="flex gap-4">
-                    {project.github_url && (
-                      <a
-                        href={project.github_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        GitHub
-                      </a>
-                    )}
-                    {project.demo_url && (
-                      <a
-                        href={project.demo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Live Demo
-                      </a>
-                    )}
-                  </div>
+                  {project.demo_url && (
+                    <a
+                      href={project.demo_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary"
+                    >
+                      Смотреть ↗
+                    </a>
+                  )}
                 </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Empty State */}
-          {projects.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-gray-500 dark:text-gray-400 text-xl">
-                No projects yet. Check back soon!
-              </p>
-            </div>
-          )}
+              </div>
+            </article>
+          ))}
+          <div className="rule-t" />
         </div>
-      </div>
-    </>
+      )}
+    </div>
   )
 }
 

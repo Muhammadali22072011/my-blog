@@ -165,7 +165,7 @@ function CustomVideoPlayer({ src, poster, title }) {
 
       {/* Controls */}
       <div 
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-4 transition-opacity duration-300 ${
+        className={`absolute bottom-0 left-0 right-0 bg-paper-deep p-4 transition-opacity duration-300 ${
           showControls ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -261,7 +261,7 @@ function CustomVideoPlayer({ src, poster, title }) {
 
       {/* Title Overlay */}
       {title && showControls && (
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent p-4">
+        <div className="absolute top-0 left-0 right-0 bg-paper-deep p-4">
           <h3 className="text-white font-medium">{title}</h3>
         </div>
       )}

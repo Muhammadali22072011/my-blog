@@ -121,19 +121,19 @@ function SecurityDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+        <div className="bg-paper-deep rounded p-6 text-white">
           <div className="text-3xl font-bold">{stats.totalAttempts}</div>
           <div className="text-blue-100 text-sm mt-1">Всего событий</div>
         </div>
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+        <div className="bg-saffron rounded p-6 text-white">
           <div className="text-3xl font-bold">{stats.blockedIPs}</div>
           <div className="text-red-100 text-sm mt-1">Заблокировано IP</div>
         </div>
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+        <div className="bg-saffron rounded p-6 text-white">
           <div className="text-3xl font-bold">{stats.suspiciousActivity}</div>
           <div className="text-orange-100 text-sm mt-1">Подозрительная активность</div>
         </div>
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+        <div className="bg-tile rounded p-6 text-white">
           <div className="text-3xl font-bold">
             {stats.lastAttack ? new Date(stats.lastAttack).toLocaleDateString() : 'Нет'}
           </div>
@@ -223,7 +223,7 @@ function SecurityDashboard() {
             </h3>
             <button
               onClick={clearLogs}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="px-4 py-2 bg-terra text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               🗑️ Очистить логи
             </button>
@@ -338,7 +338,7 @@ function SecurityDashboard() {
           </div>
 
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-400 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-medium text-yellow-800 dark:text-saffron mb-2 flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>

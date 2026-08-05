@@ -21,10 +21,10 @@ function ConnectionStatus() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+    <div className="fixed bottom-4 right-4 z-50 border border-terra bg-paper px-4 py-2">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-        <span className="text-sm font-medium">Offline</span>
+        <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-terra"></div>
+        <span className="label text-terra">Нет соединения</span>
       </div>
     </div>
   )

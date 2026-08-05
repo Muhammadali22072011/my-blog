@@ -221,8 +221,13 @@ const HEADING_CLASS = {
   6: 'label mt-6 mb-2 block',
 }
 
-/** Якорь для оглавления — совпадает с логикой TableOfContents */
-function slugify(text) {
+/**
+ * Якорь заголовка. Экспортируется, потому что этой же функцией
+ * пользуется TableOfContents: раньше оглавление строило идентификаторы
+ * по своим правилам (`heading-…`), не совпадавшим с теми, что ставил
+ * рендерер, и ссылки в оглавлении никуда не вели.
+ */
+export function slugify(text) {
   return String(text)
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, '-')

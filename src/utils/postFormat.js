@@ -155,3 +155,22 @@ export function isDisplayablePost(post) {
   if (Number.isNaN(new Date(post.created_at).getTime())) return false
   return getPostTitle(post) !== 'Без названия'
 }
+
+/**
+ * Имя телеграм-канала из любого формата, встречающегося в базе:
+ *   "@channel", "channel", "https://t.me/channel", "t.me/channel".
+ *
+ * Раньше в компонентах стояло `value.replace('@', '')`, и для значения
+ * вида https://t.me/channel на экран выводилось «@https://t.me/channel»,
+ * а ссылка собиралась как https://t.me/https://t.me/channel.
+ */
+export function telegramHandle(value) {
+  if (!value || typeof value !== 'string') return null
+  const handle = value
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^t\.me\//i, '')
+    .replace(/^@/, '')
+    .replace(/[/?#].*$/, '')
+  return handle || null
+}

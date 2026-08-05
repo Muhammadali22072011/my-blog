@@ -241,16 +241,16 @@ function SecureClockAuth({ onSuccess }) {
   const isLocked = lockoutTime && Date.now() < lockoutTime
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-paper-deep dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4">
       <div className="text-center">
         {/* Выглядит как обычный виджет погоды/времени */}
         <div className="mb-8">
-          <h1 className="text-xl font-light text-slate-600 dark:text-slate-400 mb-2">
+          <h1 className="text-xl font-light text-ink-soft dark:text-ink-soft mb-2">
             {time.toLocaleDateString('en-US', { 
               weekday: 'long'
             })}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-500">
+          <p className="text-sm text-ink-soft dark:text-ink-soft">
             {time.toLocaleDateString('en-US', { 
               month: 'long',
               day: 'numeric',
@@ -266,7 +266,7 @@ function SecureClockAuth({ onSuccess }) {
             width={300}
             height={300}
             onClick={handleClick}
-            className={`rounded-full shadow-xl ${isLocked ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'}`}
+            className={`rounded-full shadow-edge ${isLocked ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'}`}
             style={{ 
               background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
               boxShadow: '10px 10px 30px rgba(0,0,0,0.1), -10px -10px 30px rgba(255,255,255,0.5)'
@@ -275,7 +275,7 @@ function SecureClockAuth({ onSuccess }) {
         </div>
 
         {/* Цифровое время */}
-        <div className="mt-8 text-6xl font-light text-slate-700 dark:text-slate-300 tracking-wide">
+        <div className="mt-8 text-6xl font-light text-ink-soft dark:text-ink-soft tracking-wide">
           {time.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit',
@@ -284,7 +284,7 @@ function SecureClockAuth({ onSuccess }) {
         </div>
 
         {/* Секунды отдельно */}
-        <div className="mt-2 text-2xl font-light text-slate-400 dark:text-slate-500">
+        <div className="mt-2 text-2xl font-light text-ink-soft dark:text-ink-soft">
           {time.getSeconds().toString().padStart(2, '0')}
         </div>
 
@@ -292,7 +292,7 @@ function SecureClockAuth({ onSuccess }) {
         <div className="mt-8 flex justify-center gap-4">
           <button 
             onClick={() => setShowSettings(!showSettings)}
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="p-2 text-ink-soft hover:text-ink-soft dark:hover:text-ink-soft transition-colors"
             title="Settings"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@ function SecureClockAuth({ onSuccess }) {
             </svg>
           </button>
           <button 
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="p-2 text-ink-soft hover:text-ink-soft dark:hover:text-ink-soft transition-colors"
             title="Alarms"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ function SecureClockAuth({ onSuccess }) {
             </svg>
           </button>
           <button 
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="p-2 text-ink-soft hover:text-ink-soft dark:hover:text-ink-soft transition-colors"
             title="Timer"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,18 +320,18 @@ function SecureClockAuth({ onSuccess }) {
 
         {/* Fake settings panel */}
         {showSettings && (
-          <div className="mt-6 max-w-xs mx-auto bg-white dark:bg-slate-800 rounded-xl p-4 shadow-lg border border-slate-200 dark:border-slate-700">
+          <div className="mt-6 max-w-xs mx-auto bg-white dark:bg-slate-800 rounded p-4 border border-slate-200 dark:border-slate-700">
             <div className="space-y-3 text-left">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">24-hour format</span>
+                <span className="text-sm text-ink-soft dark:text-ink-soft">24-hour format</span>
                 <div className="w-10 h-6 bg-blue-500 rounded-full"></div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Show seconds</span>
+                <span className="text-sm text-ink-soft dark:text-ink-soft">Show seconds</span>
                 <div className="w-10 h-6 bg-blue-500 rounded-full"></div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Dark mode</span>
+                <span className="text-sm text-ink-soft dark:text-ink-soft">Dark mode</span>
                 <div className="w-10 h-6 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
               </div>
             </div>

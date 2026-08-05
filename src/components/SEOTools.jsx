@@ -48,7 +48,7 @@ function SEOTools({ posts }) {
   return (
     <div className="space-y-6">
       {/* Заголовок */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+      <div className="bg-paper-deep rounded-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">🚀 SEO Инструменты</h2>
         <p className="text-blue-100">Генерация sitemap.xml и robots.txt для поисковых систем</p>
       </div>
@@ -107,7 +107,7 @@ function SEOTools({ posts }) {
           </div>
           <button
             onClick={handleGenerateRobots}
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+            className="w-full px-4 py-2 bg-tile text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
           >
             Скачать robots.txt
           </button>
@@ -150,7 +150,7 @@ function SEOTools({ posts }) {
             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Опубликовано</div>
           </div>
           <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-3xl font-bold text-tile dark:text-purple-400">
               {new Set(posts.map(p => p.category)).size}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Категорий</div>

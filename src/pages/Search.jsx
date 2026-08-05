@@ -1,241 +1,218 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useDeferredValue } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../context/DataContext'
+import SEOHead from '../components/SEOHead'
+import {
+  getPostTitle,
+  getExcerpt,
+  toPlainText,
+  formatDateRu,
+  isDisplayablePost,
+} from '../utils/postFormat'
 
+/**
+ * Поиск по материалам, профилю и странице «Об авторе».
+ *
+ * Ввод обёрнут в useDeferredValue: перебор всех текстов на каждое
+ * нажатие клавиши подтормаживал поле ввода.
+ */
 function Search() {
   const { posts, profile, aboutMePage } = useData()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
   const [category, setCategory] = useState('all')
   const [sortBy, setSortBy] = useState('relevance')
 
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([])
-      return
-    }
+  const deferredQuery = useDeferredValue(query)
 
-    const searchQuery = query.toLowerCase()
-    let allResults = []
+  const categories = useMemo(
+    () => [
+      'all',
+      ...new Set((posts || []).filter(isDisplayablePost).map((p) => p.category).filter(Boolean)),
+    ],
+    [posts]
+  )
 
-    // Поиск в постах
-    const postResults = posts
-      .filter(post => post.status === 'published')
-      .filter(post => {
-        const title = getPostTitle(post).toLowerCase()
-        const content = post.content.toLowerCase()
-        const cat = post.category?.toLowerCase() || ''
-        return title.includes(searchQuery) || content.includes(searchQuery) || cat.includes(searchQuery)
-      })
-      .map(post => ({
-        type: 'post',
-        id: post.id,
-        title: getPostTitle(post),
-        content: post.content,
-        category: post.category,
-        url: `/post/${post.id}`,
-        date: post.created_at,
-        views: post.views || 0
-      }))
+  const results = useMemo(() => {
+    const needle = deferredQuery.trim().toLowerCase()
+    if (!needle) return []
 
-    // Поиск в профиле
+    const found = []
+
     if (profile) {
-      const profileText = `${profile.name} ${profile.position} ${profile.about_me || profile.aboutMe || ''}`.toLowerCase()
-      if (profileText.includes(searchQuery)) {
-        allResults.push({
-          type: 'page',
+      const text = `${profile.name || ''} ${profile.position || ''} ${
+        profile.about_me || profile.aboutMe || ''
+      }`.toLowerCase()
+      if (text.includes(needle)) {
+        found.push({
           id: 'home',
-          title: 'Home - ' + (profile.name || 'Profile'),
-          content: profile.about_me || profile.aboutMe || '',
-          category: 'page',
+          kind: 'Страница',
+          title: profile.name || 'Главная',
+          excerpt: profile.about_me || profile.aboutMe || '',
           url: '/',
-          date: new Date().toISOString(),
-          views: 0
-        })
-      }
-    }
-
-    // Поиск в About Me
-    if (aboutMePage) {
-      const aboutText = `${aboutMePage.title || ''} ${aboutMePage.content || ''} ${aboutMePage.skills?.join(' ') || ''}`.toLowerCase()
-      if (aboutText.includes(searchQuery)) {
-        allResults.push({
-          type: 'page',
-          id: 'about',
-          title: 'About Me',
-          content: aboutMePage.content || '',
           category: 'page',
-          url: '/about',
-          date: new Date().toISOString(),
-          views: 0
+          date: null,
+          score: 5,
         })
       }
     }
 
-    // Добавляем посты
-    allResults = [...allResults, ...postResults]
-
-    // Фильтр по категории
-    if (category !== 'all') {
-      allResults = allResults.filter(r => r.category === category)
-    }
-
-    // Сортировка
-    if (sortBy === 'date') {
-      allResults.sort((a, b) => new Date(b.date) - new Date(a.date))
-    } else if (sortBy === 'views') {
-      allResults.sort((a, b) => b.views - a.views)
-    }
-
-    setResults(allResults)
-  }, [query, posts, profile, aboutMePage, category, sortBy])
-
-  const getPostTitle = (post) => {
-    if (post.content) {
-      const lines = post.content.split('\n')
-      for (const line of lines) {
-        if (line.trim().startsWith('# ')) {
-          return line.trim().substring(2)
-        }
+    if (aboutMePage) {
+      const text = `${aboutMePage.title || ''} ${aboutMePage.content || ''} ${
+        aboutMePage.skills?.join(' ') || ''
+      }`.toLowerCase()
+      if (text.includes(needle)) {
+        found.push({
+          id: 'about',
+          kind: 'Страница',
+          title: aboutMePage.title || 'Об авторе',
+          excerpt: toPlainText(aboutMePage.content).slice(0, 160),
+          url: '/about',
+          category: 'page',
+          date: null,
+          score: 5,
+        })
       }
     }
-    return post.excerpt || 'Untitled'
-  }
 
-  const highlightText = (text, query) => {
-    if (!query) return text
-    const parts = text.split(new RegExp(`(${query})`, 'gi'))
-    return parts.map((part, i) => 
-      part.toLowerCase() === query.toLowerCase() 
-        ? <mark key={i} className="bg-gradient-to-r from-yellow-200 to-yellow-300 dark:from-yellow-600 dark:to-yellow-700 px-1 rounded">{part}</mark>
-        : part
-    )
-  }
+    for (const post of (posts || []).filter(isDisplayablePost)) {
+      const title = getPostTitle(post)
+      const inTitle = title.toLowerCase().includes(needle)
+      const inBody = post.content.toLowerCase().includes(needle)
+      const inCategory = (post.category || '').toLowerCase().includes(needle)
+      if (!inTitle && !inBody && !inCategory) continue
 
-  const categories = ['all', 'page', ...new Set(posts.map(p => p.category).filter(Boolean))]
+      found.push({
+        id: post.id,
+        kind: 'Материал',
+        title,
+        excerpt: getExcerpt(post.content, 170),
+        url: `/post/${post.id}`,
+        category: post.category,
+        date: post.created_at,
+        views: post.views || 0,
+        // Совпадение в заголовке важнее совпадения в теле
+        score: (inTitle ? 10 : 0) + (inCategory ? 3 : 0) + (inBody ? 1 : 0),
+      })
+    }
+
+    const filtered = category === 'all' ? found : found.filter((r) => r.category === category)
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'date') return new Date(b.date || 0) - new Date(a.date || 0)
+      if (sortBy === 'views') return (b.views || 0) - (a.views || 0)
+      return b.score - a.score
+    })
+  }, [deferredQuery, category, sortBy, posts, profile, aboutMePage])
+
+  const stale = query !== deferredQuery
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Search
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">Find what you're looking for</p>
+    <div className="mx-auto max-w-4xl px-5 sm:px-8">
+      <SEOHead title="Поиск" description="Поиск по материалам блога." />
+
+      <header className="pb-10 pt-16 sm:pt-24">
+        <p className="label">По материалам, профилю и странице об авторе</p>
+        <h1 className="display mt-3 text-[clamp(2.5rem,9vw,6rem)]">Поиск</h1>
+
+        <div className="mt-12">
+          <label htmlFor="q" className="label">
+            Запрос
+          </label>
+          <input
+            id="q"
+            type="search"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="слово, тема, имя…"
+            className="mt-2 w-full border-0 border-b border-ink/25 bg-transparent px-0 py-3 text-2xl outline-none transition-colors placeholder:text-ink-faint focus:border-tile"
+          />
         </div>
 
-        {/* Search Box */}
-        <div className="relative mb-8">
-          <div className="relative group">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type to search..."
-              className="w-full px-6 py-4 pl-14 text-lg bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-lg"
-              autoFocus
-            />
-            <svg className="w-6 h-6 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
+        {query.trim() && (
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <span className="label text-ink-faint">
+              Найдено: {results.length}
+              {stale && ' …'}
+            </span>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <div className="flex gap-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  category === cat
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-105'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                {cat === 'all' ? 'All' : cat === 'page' ? 'Pages' : cat}
-              </button>
-            ))}
-          </div>
-          
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm"
-          >
-            <option value="relevance">Relevance</option>
-            <option value="date">Latest</option>
-            <option value="views">Most Viewed</option>
-          </select>
-        </div>
+            {categories.length > 1 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="label text-ink-faint">Рубрика:</span>
+                {categories.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(c)}
+                    aria-pressed={category === c}
+                    className={`label link-wipe ${category === c ? 'text-tile' : ''}`}
+                  >
+                    {c === 'all' ? 'все' : c}
+                  </button>
+                ))}
+              </div>
+            )}
 
-        {/* Results */}
-        {query && (
-          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Found {results.length} result{results.length !== 1 ? 's' : ''}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="label text-ink-faint">Порядок:</span>
+              {[
+                ['relevance', 'по совпадению'],
+                ['date', 'по дате'],
+                ['views', 'по просмотрам'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setSortBy(value)}
+                  aria-pressed={sortBy === value}
+                  className={`label link-wipe ${sortBy === value ? 'text-tile' : ''}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
+      </header>
 
-        <div className="space-y-4">
-          {results.map((result, index) => (
-            <Link
-              key={`${result.type}-${result.id}-${index}`}
-              to={result.url}
-              className="block bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-100 dark:border-gray-700"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex-1">
-                  {highlightText(result.title, query)}
-                </h2>
-                <span className={`ml-4 px-3 py-1 rounded-full text-xs font-medium ${
-                  result.type === 'page'
-                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-700 dark:text-green-400'
-                    : 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-400'
-                }`}>
-                  {result.type === 'page' ? '📄 Page' : result.category}
-                </span>
-              </div>
-              
-              <p className="text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                {highlightText(result.content.substring(0, 200), query)}...
-              </p>
-              
-              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-500">
-                <span className="flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {new Date(result.date).toLocaleDateString()}
-                </span>
-                {result.views > 0 && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    {result.views} views
+      <div className="pb-24">
+        {!query.trim() ? (
+          <p className="rule-t py-16 text-center text-ink-soft">
+            Начните вводить запрос — результаты появятся сразу.
+          </p>
+        ) : results.length === 0 ? (
+          <div className="rule-t py-20 text-center">
+            <p className="display text-3xl text-ink-faint">Ничего не найдено</p>
+            <p className="mt-3 text-ink-soft">
+              Попробуйте другое слово или загляните в{' '}
+              <Link to="/blogs" className="link-wipe text-tile">
+                указатель
+              </Link>
+              .
+            </p>
+          </div>
+        ) : (
+          <div className={`pl-5 transition-opacity ${stale ? 'opacity-60' : ''}`}>
+            {results.map((r, i) => (
+              <Link key={`${r.kind}-${r.id}`} to={r.url} className="index-row group">
+                <div className="flex items-baseline gap-5">
+                  <span className="folio w-10 flex-shrink-0">
+                    {String(i + 1).padStart(3, '0')}
                   </span>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {query && results.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">No results found</h3>
-            <p className="text-gray-500 dark:text-gray-500">Try different keywords</p>
-          </div>
-        )}
-
-        {!query && (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">✨</div>
-            <h3 className="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">Start searching</h3>
-            <p className="text-gray-500 dark:text-gray-500">Type something to find posts and pages</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="label label-tile">{r.kind}</span>
+                      {r.date && <span className="label">{formatDateRu(r.date)}</span>}
+                    </div>
+                    <h2 className="display mt-1.5 text-xl leading-snug transition-colors group-hover:text-tile sm:text-2xl">
+                      {r.title}
+                    </h2>
+                    {r.excerpt && (
+                      <p className="mt-2 text-sm leading-relaxed text-ink-soft">{r.excerpt}</p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+            <div className="rule-t" />
           </div>
         )}
       </div>

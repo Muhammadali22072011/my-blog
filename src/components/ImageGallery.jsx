@@ -77,7 +77,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
   if (error) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <div className="text-red-500 text-4xl mb-4">⚠️</div>
+        <div className="text-terra text-4xl mb-4">⚠️</div>
         <p className="text-red-600 mb-4">{error}</p>
         <button
           onClick={refreshImages}
@@ -139,7 +139,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
                   navigator.clipboard.writeText(image.url)
                   alert('✅ URL copied to clipboard!\n\nNow paste it in Featured Image field')
                 }}
-                className="absolute top-3 right-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-medium shadow-lg z-10 flex items-center gap-1"
+                className="absolute top-3 right-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs font-medium z-10 flex items-center gap-1"
                 title="Copy URL"
               >
                 📋 Copy URL
@@ -199,7 +199,7 @@ function ImageGallery({ onImageSelect, className = '' }) {
                 e.stopPropagation()
                 handleDeleteImage(image)
               }}
-              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600"
+              className="absolute top-2 right-2 w-6 h-6 bg-terra text-white rounded-full hover:bg-terra"
               title="Удалить изображение"
             >
               ×

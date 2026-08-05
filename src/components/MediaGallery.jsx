@@ -139,7 +139,7 @@ function MediaGallery({ onSelectMedia }) {
                         e.stopPropagation()
                         handleDelete(image, 'image')
                       }}
-                      className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      className="p-2 bg-terra text-white rounded-full hover:bg-terra"
                       title="Удалить"
                     >
                       🗑️

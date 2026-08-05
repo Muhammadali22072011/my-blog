@@ -108,7 +108,7 @@ function SecurityAuditLog() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Event type filter */}
           <div>
@@ -173,7 +173,7 @@ function SecurityAuditLog() {
           <div className="text-sm text-gray-600 dark:text-gray-400">Админ доступов</div>
         </div>
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+          <div className="text-2xl font-bold text-tile dark:text-purple-400">
             {new Set(logs.map(l => l.ip_address)).size}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400">Уникальных IP</div>
@@ -181,7 +181,7 @@ function SecurityAuditLog() {
       </div>
 
       {/* Logs table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Загрузка...</div>
         ) : logs.length === 0 ? (

@@ -49,7 +49,7 @@ function ColorPicker({ onInsert }) {
 
       {/* Панель выбора цвета */}
       {showPicker && (
-        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 z-50 min-w-[300px]">
+        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4 z-50 min-w-[300px]">
           <div className="mb-3">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Быстрые цвета

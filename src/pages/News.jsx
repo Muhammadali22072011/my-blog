@@ -1,218 +1,140 @@
-import { useData } from '../context/DataContext'
 import { Link } from 'react-router-dom'
-import { translations } from '../translations'
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
+import { useData } from '../context/DataContext'
+import SEOHead from '../components/SEOHead'
+import {
+  getPostTitle,
+  getExcerpt,
+  getReadingTime,
+  formatDateRu,
+  monthNameRu,
+  isDisplayablePost,
+} from '../utils/postFormat'
 
+/**
+ * Новости: хроника по месяцам. Год — крупной колонцифрой на полях,
+ * записи — строками с датой слева.
+ */
 function News() {
-  const t = translations.en
-  const { posts, loading: dataLoading, error } = useData()
-  const [newsPosts, setNewsPosts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { posts, loading, error } = useData()
 
-  useEffect(() => {
-    const fetchNewsPosts = async () => {
-      try {
-        setLoading(true)
-        // Фильтруем посты по категории 'news' и статусу 'published'
-        const filteredPosts = posts.filter(post => 
-          post.category === 'news' && post.status === 'published'
-        )
-        setNewsPosts(filteredPosts || [])
-      } catch (error) {
-        console.error('Error fetching news posts:', error)
-        setNewsPosts([])
-      } finally {
-        setLoading(false)
-      }
-    }
+  const newsPosts = useMemo(
+    () =>
+      (posts || [])
+        .filter((p) => isDisplayablePost(p) && p.category === 'news')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
+    [posts]
+  )
 
-    fetchNewsPosts()
-  }, [posts])
-
-  // Group news by years and months
-  const groupPostsByDate = (posts) => {
-    const grouped = {}
-    
-    posts.forEach(post => {
+  // Группировка без мутации исходных массивов
+  const grouped = useMemo(() => {
+    const byYear = new Map()
+    for (const post of newsPosts) {
       const date = new Date(post.created_at)
       const year = date.getFullYear()
-      const month = date.toLocaleDateString('en-US', { month: 'long' })
-      
-      if (!grouped[year]) {
-        grouped[year] = {}
-      }
-      if (!grouped[year][month]) {
-        grouped[year][month] = []
-      }
-      
-      grouped[year][month].push(post)
-    })
-    
-    return grouped
-  }
+      const month = date.getMonth()
+      if (!byYear.has(year)) byYear.set(year, new Map())
+      const months = byYear.get(year)
+      if (!months.has(month)) months.set(month, [])
+      months.get(month).push(post)
+    }
+    return [...byYear.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([year, months]) => [year, [...months.entries()].sort((a, b) => b[0] - a[0])])
+  }, [newsPosts])
 
-  const groupedPosts = groupPostsByDate(newsPosts)
-  const sortedYears = Object.keys(groupedPosts).sort((a, b) => b - a)
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No Date'
-    
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return 'Invalid Date'
-    
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-  }
-
-  if (dataLoading || loading) {
+  if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 pt-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading news...</p>
+      <div className="mx-auto max-w-5xl px-5 pt-20 sm:px-8">
+        <div className="skeleton h-3 w-24" />
+        <div className="skeleton mt-6 h-14 w-2/5" />
+        <div className="mt-14 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="skeleton h-5" style={{ width: `${90 - i * 8}%` }} />
+          ))}
         </div>
       </div>
     )
   }
 
-  // Show error state
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto px-4 pt-12">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading News</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
+      <div className="mx-auto max-w-2xl px-5 py-32 text-center sm:px-8">
+        <p className="label text-terra">Ошибка загрузки</p>
+        <h1 className="display mt-4 text-4xl">Новости недоступны</h1>
+        <p className="mt-4 text-ink-soft">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary mt-8">
+          Повторить
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
-      {/* Header */}
-      <div className="text-center mb-16 pt-12">
-        <h1 className="text-4xl font-bold text-gray-800">NEWS</h1>
-      </div>
+    <div className="mx-auto max-w-5xl px-5 sm:px-8">
+      <SEOHead title="Новости" description="Хроника блога: короткие заметки и объявления." />
 
-      {/* Subscription card - mobile (показывается только на мобильных) */}
-      <div className="lg:hidden mb-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Subscribe</h3>
-          <p className="text-gray-600 text-sm leading-relaxed mb-4">
-            New articles, lectures and courses are available in my @muhammadaliaiblog telegram channel.
+      <header className="pb-12 pt-16 sm:pt-24">
+        <p className="label">
+          {newsPosts.length} {newsPosts.length === 1 ? 'запись' : 'записей'}
+        </p>
+        <h1 className="display mt-3 text-[clamp(2.5rem,9vw,6rem)]">Новости</h1>
+      </header>
+
+      {newsPosts.length === 0 ? (
+        <div className="rule-t py-24 text-center">
+          <p className="display text-3xl text-ink-faint">Пока тихо</p>
+          <p className="mt-3 text-ink-soft">
+            Материалы этой рубрики появятся здесь. Загляните в{' '}
+            <Link to="/blogs" className="link-wipe text-tile">
+              указатель
+            </Link>
+            .
           </p>
-          <a 
-            href="https://t.me/muhammadaliaiblog" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-          >
-            @muhammadaliaiblog
-          </a>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-16 pb-24">
+          {grouped.map(([year, months]) => (
+            <section key={year} className="grid grid-cols-12 gap-6">
+              <div className="col-span-12 lg:col-span-2">
+                <h2 className="display sticky top-28 text-5xl text-ink-faint">{year}</h2>
+              </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Main content - News posts */}
-        <div className="flex-1 order-2 lg:order-1">
-          {newsPosts.length > 0 ? (
-            <div className="space-y-8">
-              {sortedYears.map(year => (
-                <div key={year} className="space-y-6">
-                  {/* Year pill */}
-                  <div className="inline-block bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">
-                    {year}
+              <div className="col-span-12 lg:col-span-10">
+                {months.map(([month, monthPosts]) => (
+                  <div key={month} className="mb-10">
+                    <h3 className="label rule-b pb-2">{monthNameRu(month)}</h3>
+
+                    <div className="pl-5">
+                      {monthPosts.map((post) => (
+                        <Link key={post.id} to={`/post/${post.id}`} className="index-row group">
+                          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-5">
+                            <span className="folio w-28 flex-shrink-0">
+                              {formatDateRu(post.created_at)}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="display text-xl leading-snug transition-colors group-hover:text-tile">
+                                {getPostTitle(post)}
+                              </h4>
+                              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                                {getExcerpt(post.content, 140)}
+                              </p>
+                            </div>
+                            <span className="label flex-shrink-0 whitespace-nowrap">
+                              {getReadingTime(post.content)} мин
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                      <div className="rule-t" />
+                    </div>
                   </div>
-                  
-                  {/* Months and posts */}
-                  {Object.entries(groupedPosts[year])
-                    .sort((a, b) => {
-                      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                                    'July', 'August', 'September', 'October', 'November', 'December']
-                      return months.indexOf(b[0]) - months.indexOf(a[0])
-                    })
-                    .map(([month, monthPosts]) => (
-                      <div key={month} className="ml-4 sm:ml-6 space-y-4">
-                        {/* Month */}
-                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800">{month}</h2>
-                        
-                        {/* Posts under month */}
-                        <div className="space-y-3">
-                          {monthPosts
-                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                            .map(post => {
-                              // Получаем заголовок из контента
-                              const getPostTitle = (content) => {
-                                if (!content) return 'No title'
-                                const lines = content.split('\n')
-                                for (const line of lines) {
-                                  const trimmed = line.trim()
-                                  if (trimmed.startsWith('# ')) {
-                                    return trimmed.substring(2)
-                                  }
-                                }
-                                return content.length > 60 ? content.substring(0, 60) + '...' : content
-                              }
-                              
-                              return (
-                                <div key={post.id} className="border-b border-gray-200 pb-3">
-                                  <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
-                                    <span className="text-gray-500 text-xs sm:text-sm sm:min-w-[120px]">
-                                      {formatDate(post.created_at)}
-                                    </span>
-                                    <Link 
-                                      to={`/post/${post.slug || post.id}`}
-                                      className="text-gray-700 hover:text-gray-900 transition-colors flex-1 text-sm sm:text-base"
-                                    >
-                                      {getPostTitle(post.content)}
-                                    </Link>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">📰</div>
-              <h3 className="text-xl font-medium text-gray-600 mb-2">{t.noNewsYet || 'No news yet'}</h3>
-              <p className="text-gray-500">{t.createFirstNews || 'Create your first news post to get started'}</p>
-            </div>
-          )}
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
-
-        {/* Subscription sidebar - desktop (скрывается на мобильных) */}
-        <div className="hidden lg:block w-64 flex-shrink-0 order-1 lg:order-2">
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm sticky top-24">
-            <h3 className="text-lg font-medium text-gray-800 mb-3">Subscribe</h3>
-            <p className="text-gray-600 text-sm leading-relaxed mb-4">
-              New articles, lectures and courses are available in my @muhammadaliaiblog telegram channel.
-            </p>
-            <a 
-              href="https://t.me/muhammadaliaiblog" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-            >
-              @muhammadaliaiblog
-            </a>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

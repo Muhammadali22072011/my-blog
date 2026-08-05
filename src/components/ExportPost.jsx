@@ -373,7 +373,7 @@ function ExportPost({ post, title }) {
             className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+          <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white dark:bg-gray-800 rounded shadow-edge border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
             <button
               onClick={exportMarkdown}
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 sm:gap-3 touch-manipulation active:bg-gray-100 dark:active:bg-gray-600"

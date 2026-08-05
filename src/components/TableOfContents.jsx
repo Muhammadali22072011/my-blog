@@ -1,163 +1,127 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { slugify } from '../utils/markdownRenderer.jsx'
 
+/**
+ * Оглавление материала.
+ *
+ * Что исправлено:
+ *
+ *  1. Якоря считались по собственной схеме (`heading-…`) и не совпадали
+ *     с теми, что ставит рендерер, — ссылки в оглавлении не работали.
+ *     Обе стороны теперь зовут одну функцию slugify.
+ *  2. Идентификаторы дописывались в DOM через setTimeout(500) и полный
+ *     перебор всех h1–h6 со сравнением текста. Костыль убран целиком:
+ *     заголовки приходят с id прямо из рендерера.
+ *  3. Активный пункт определялся слушателем прокрутки, который на каждое
+ *     событие обходил все заголовки с getBoundingClientRect. Заменено на
+ *     IntersectionObserver.
+ *  4. Убраны console.log на каждый найденный заголовок.
+ */
 function TableOfContents({ content }) {
-  const [headings, setHeadings] = useState([])
   const [activeId, setActiveId] = useState('')
-  const [readingProgress, setReadingProgress] = useState(0)
+  const [progress, setProgress] = useState(0)
 
-  useEffect(() => {
-    // Извлекаем заголовки из Markdown контента
-    if (!content) return
-    
-    const lines = content.split('\n')
-    const headingsArray = []
-    
-    lines.forEach((line, index) => {
-      const trimmed = line.trim()
-      if (trimmed.startsWith('#')) {
-        const level = trimmed.match(/^#+/)[0].length
-        let text = trimmed.replace(/^#+\s*/, '').trim()
-        
-        // Убираем нумерацию в начале (1), 2), 3. и т.д.)
-        text = text.replace(/^\d+[\)\.]\s*/, '').trim()
-        
-        if (text && level <= 3) { // Только h1, h2, h3
-          const id = `heading-${text.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-')}`
-          headingsArray.push({
-            id,
-            text,
-            level
-          })
-          console.log('📋 Found heading:', { level, text, id })
-        }
-      }
-    })
-    
-    console.log('📚 Total headings found:', headingsArray.length)
-    setHeadings(headingsArray)
+  const headings = useMemo(() => {
+    if (!content) return []
+
+    const found = []
+    for (const line of content.split('\n')) {
+      const match = line.trim().match(/^(#{1,3})\s+(.+)$/)
+      if (!match) continue
+
+      const text = match[2].trim()
+      if (!text) continue
+
+      found.push({ id: slugify(text), text, level: match[1].length })
+    }
+
+    // Первый заголовок — название материала, оно уже выведено как h1 страницы
+    return found.length > 1 && found[0].level === 1 ? found.slice(1) : found
   }, [content])
 
   useEffect(() => {
-    // Добавляем ID к заголовкам на странице более надежным способом
     if (headings.length === 0) return
-    
-    const timer = setTimeout(() => {
-      headings.forEach(({ id, text }) => {
-        const allHeadings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
-        allHeadings.forEach(heading => {
-          // Нормализуем текст для сравнения
-          const headingText = heading.textContent.trim().replace(/^\d+[\)\.]\s*/, '')
-          const targetText = text.trim()
-          
-          if (headingText === targetText && !heading.id) {
-            heading.id = id
-            console.log('✅ Added ID to heading:', id, targetText)
-          }
-        })
-      })
-    }, 500) // Даем время на рендеринг
-    
-    return () => clearTimeout(timer)
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setActiveId(visible[0].target.id)
+      },
+      { rootMargin: '-96px 0px -70% 0px', threshold: 0 }
+    )
+
+    // Заголовки появляются вместе с текстом — ждём кадр отрисовки
+    const frame = requestAnimationFrame(() => {
+      for (const { id } of headings) {
+        const el = document.getElementById(id)
+        if (el) observer.observe(el)
+      }
+    })
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
   }, [headings])
 
   useEffect(() => {
-    // Отслеживание прогресса чтения
-    const handleScroll = () => {
-      const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const progress = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0
-      setReadingProgress(Math.round(progress))
-      
-      // Определяем активный заголовок
-      let currentActive = ''
-      headings.forEach(({ id }) => {
-        const element = document.getElementById(id)
-        if (element) {
-          const rect = element.getBoundingClientRect()
-          if (rect.top <= 150 && rect.top >= -100) {
-            currentActive = id
-          }
-        }
+    let frame = null
+
+    const onScroll = () => {
+      if (frame !== null) return
+      frame = requestAnimationFrame(() => {
+        frame = null
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight
+        setProgress(
+          docHeight > 0 ? Math.round(Math.min((window.scrollY / docHeight) * 100, 100)) : 0
+        )
       })
-      
-      if (currentActive) {
-        setActiveId(currentActive)
-      }
     }
 
-    window.addEventListener('scroll', handleScroll)
-    handleScroll() // Вызываем сразу
-    
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [headings])
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame !== null) cancelAnimationFrame(frame)
+    }
+  }, [])
 
   if (headings.length === 0) return null
 
   return (
-    <nav className="sticky top-24 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-120px)] overflow-y-auto">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+    <nav aria-labelledby="toc-heading" className="max-h-[calc(100vh-9rem)] overflow-y-auto">
+      <div className="rule-b flex items-baseline justify-between pb-2">
+        <h2 id="toc-heading" className="label">
           Оглавление
-        </h3>
-        <div className="relative w-10 h-10 flex-shrink-0">
-          <svg className="transform -rotate-90 w-10 h-10">
-            <circle
-              cx="20"
-              cy="20"
-              r="16"
-              stroke="currentColor"
-              strokeWidth="3"
-              fill="none"
-              className="text-gray-200 dark:text-gray-700"
-            />
-            <circle
-              cx="20"
-              cy="20"
-              r="16"
-              stroke="currentColor"
-              strokeWidth="3"
-              fill="none"
-              strokeDasharray={`${2 * Math.PI * 16}`}
-              strokeDashoffset={`${2 * Math.PI * 16 * (1 - readingProgress / 100)}`}
-              className="text-blue-600 dark:text-blue-400 transition-all duration-300"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-gray-900 dark:text-white">
-              {readingProgress}%
-            </span>
-          </div>
-        </div>
+        </h2>
+        <span className="folio numeric">{progress}%</span>
       </div>
-      
-      <ul className="space-y-1">
-        {headings.map((heading) => (
-          <li
-            key={heading.id}
-            style={{ paddingLeft: `${(heading.level - 1) * 12}px` }}
-          >
+
+      <ol className="mt-4 space-y-2.5">
+        {headings.map((heading, i) => (
+          <li key={`${heading.id}-${i}`} style={{ paddingLeft: `${(heading.level - 1) * 14}px` }}>
             <a
               href={`#${heading.id}`}
-              className={`block text-xs py-1.5 px-2 rounded transition-all ${
-                activeId === heading.id
-                  ? 'text-blue-600 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              aria-current={activeId === heading.id ? 'true' : undefined}
+              className={`block text-sm leading-snug transition-colors ${
+                activeId === heading.id ? 'text-tile' : 'text-ink-soft hover:text-ink'
               }`}
               onClick={(e) => {
+                const el = document.getElementById(heading.id)
+                if (!el) return
                 e.preventDefault()
-                const element = document.getElementById(heading.id)
-                if (element) {
-                  const yOffset = -100
-                  const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
-                  window.scrollTo({ top: y, behavior: 'smooth' })
-                }
+                const y = el.getBoundingClientRect().top + window.scrollY - 96
+                window.scrollTo({ top: y, behavior: 'smooth' })
+                history.replaceState(null, '', `#${heading.id}`)
               }}
             >
               {heading.text}
             </a>
           </li>
         ))}
-      </ul>
+      </ol>
     </nav>
   )
 }

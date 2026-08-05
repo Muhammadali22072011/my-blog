@@ -1,6 +1,7 @@
 import { Outlet, Link } from 'react-router-dom'
 import Navbar from './Navbar'
 import { useData } from '../context/DataContext'
+import { telegramHandle } from '../utils/postFormat'
 
 /**
  * Каркас страницы: колонтитул сверху, полоса контента, выходные данные снизу.
@@ -10,7 +11,7 @@ function Layout() {
   const { siteSettings, profile } = useData()
 
   const siteName = siteSettings?.site_name || 'Muhammadali Izzatullaev'
-  const channel = profile?.telegram_channel?.replace('@', '') || 'muhammadaliaiblog'
+  const channel = telegramHandle(profile?.telegram_channel) || 'muhammadaliaiblog'
 
   // Ссылки берутся из профиля; отсутствующие просто не отрисовываются,
   // вместо прежних заглушек на github.com / twitter.com

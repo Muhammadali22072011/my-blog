@@ -97,7 +97,7 @@ function AutoSEO({ post, onUpdate }) {
       <button
         onClick={handleAutoGenerate}
         disabled={isProcessing}
-        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full px-6 py-3 bg-paper-deep text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isProcessing ? (
           <>
@@ -114,7 +114,7 @@ function AutoSEO({ post, onUpdate }) {
 
       {/* Превью сгенерированных данных */}
       {showPreview && seoData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border-2 border-blue-500 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border-2 border-blue-500 space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
               📊 Сгенерированные SEO данные
@@ -128,7 +128,7 @@ function AutoSEO({ post, onUpdate }) {
           </div>
 
           {/* SEO Score */}
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-4">
+          <div className="bg-paper-deep dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SEO Оценка</span>
               <span className={`text-2xl font-bold ${

@@ -73,7 +73,7 @@ function FloatingTOC({ content }) {
 
   return (
     <div className="fixed right-8 top-1/2 -translate-y-1/2 z-40 hidden xl:block">
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-gray-200 dark:border-gray-700 max-w-xs">
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded p-4 shadow-edge border border-gray-200 dark:border-gray-700 max-w-xs">
         {/* Progress Circle */}
         <div className="flex items-center justify-center mb-4">
           <div className="relative w-16 h-16">
@@ -117,7 +117,7 @@ function FloatingTOC({ content }) {
                 block w-full text-left text-xs py-1.5 px-2 rounded-lg transition-all
                 ${level === 2 ? 'ml-2' : level === 3 ? 'ml-4' : ''}
                 ${activeId === id 
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-lg scale-105' 
+                  ? 'bg-paper-deep text-white font-medium  scale-105' 
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                 }
               `}

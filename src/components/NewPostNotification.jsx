@@ -16,20 +16,20 @@ function NewPostNotification({ newPost }) {
   }
 
   return (
-    <div className="fixed top-4 right-4 bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm">
+    <div className="fixed right-4 top-24 z-50 max-w-sm border border-ink/20 bg-paper px-4 py-3 shadow-edge">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          <div className="mt-2 h-1.5 w-1.5 animate-pulse rounded-full bg-tile"></div>
         </div>
         <div className="flex-1">
-          <h4 className="font-medium text-sm">New Post Available</h4>
-          <p className="text-xs text-blue-100 mt-1">
+          <h4 className="label label-tile">Новый материал</h4>
+          <p className="mt-1 text-sm text-ink-soft">
             {newPost.content ? (newPost.content.length > 50 ? newPost.content.substring(0, 50) + '...' : newPost.content) : 'A new post has been published'}
           </p>
         </div>
         <button
           onClick={() => setVisible(false)}
-          className="text-blue-200 hover:text-white text-lg font-bold"
+          className="label hover:text-terra"
         >
           ×
         </button>

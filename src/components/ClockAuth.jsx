@@ -221,10 +221,10 @@ function ClockAuth({ onSuccess }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-paper flex items-center justify-center px-4">
       <div className="text-center">
         {/* Заголовок как будто это просто виджет часов */}
-        <h1 className="text-2xl font-light text-slate-400 mb-8">
+        <h1 className="text-2xl font-light text-ink-soft mb-8">
           {time.toLocaleDateString('ru-RU', { 
             weekday: 'long', 
             day: 'numeric', 
@@ -239,7 +239,7 @@ function ClockAuth({ onSuccess }) {
             width={300}
             height={300}
             onClick={handleClick}
-            className="cursor-pointer rounded-full shadow-2xl"
+            className="cursor-pointer rounded-full shadow-edge"
             style={{ 
               background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
               boxShadow: '20px 20px 60px #1e293b, -20px -20px 60px #334155'
@@ -248,7 +248,7 @@ function ClockAuth({ onSuccess }) {
         </div>
 
         {/* Цифровое время */}
-        <div className="mt-6 text-5xl font-mono text-slate-300 tracking-wider">
+        <div className="mt-6 text-5xl font-mono text-ink-soft tracking-wider">
           {time.toLocaleTimeString('ru-RU', { 
             hour: '2-digit', 
             minute: '2-digit',
@@ -258,7 +258,7 @@ function ClockAuth({ onSuccess }) {
 
         {/* Подсказка (появляется только при взаимодействии) */}
         {hint && (
-          <div className={`mt-4 text-sm ${error ? 'text-red-400' : 'text-slate-500'}`}>
+          <div className={`mt-4 text-sm ${error ? 'text-red-400' : 'text-ink-soft'}`}>
             {hint}
           </div>
         )}

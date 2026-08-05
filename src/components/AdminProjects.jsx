@@ -133,7 +133,7 @@ function AdminProjects() {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -290,7 +290,7 @@ function AdminProjects() {
         {projects.map((project) => (
           <div
             key={project.id}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded overflow-hidden"
           >
             {project.image_url && (
               <img
@@ -334,7 +334,7 @@ function AdminProjects() {
                 </button>
                 <button
                   onClick={() => handleDelete(project.id)}
-                  className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex-1 px-3 py-2 bg-terra text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Delete
                 </button>

@@ -670,7 +670,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Image modal */}
       {showImageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
+          <div className="bg-white rounded p-6 w-96">
             <h3 className="text-xl font-bold mb-4">{t.insertImage}</h3>
             
             {/* Toggle between URL and file */}
@@ -751,7 +751,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Video modal */}
       {showVideoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
+          <div className="bg-white rounded p-6 w-96">
             <h3 className="text-xl font-bold mb-4">{t.insertVideo}</h3>
             
             {/* Toggle between URL and file */}
@@ -764,7 +764,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
                     setVideoUrl('')
                   }}
                   className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    videoMode === 'url' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                    videoMode === 'url' ? 'bg-tile text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
                   URL
@@ -776,7 +776,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
                     setVideoFile(null)
                   }}
                   className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    videoMode === 'file' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                    videoMode === 'file' ? 'bg-tile text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
                   {t.file}
@@ -808,7 +808,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
             <div className="flex gap-2">
               <button
                 onClick={insertVideo}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-tile text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!((videoMode === 'url' && videoUrl.trim()) || (videoMode === 'file' && videoFile))}
               >
                 {t.insert}
@@ -832,7 +832,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Link modal */}
       {showLinkModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
+          <div className="bg-white rounded p-6 w-96">
             <h3 className="text-xl font-bold mb-4">{t.insertLink}</h3>
             <input
               type="text"
@@ -869,7 +869,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Table modal */}
       {showTableModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-96">
+          <div className="bg-white rounded p-6 w-96">
             <h3 className="text-xl font-bold mb-4">{t.createTable}</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
@@ -933,7 +933,7 @@ function AdminMCEditor({ value, onChange, placeholder, className = "" }) {
       {/* Instructions Modal */}
       {showInstructions && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-[900px] max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded p-6 w-[900px] max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-gray-900">📖 Справочник по использованию Markdown редактора</h3>
               <button

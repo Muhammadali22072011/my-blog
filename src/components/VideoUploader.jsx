@@ -167,7 +167,7 @@ function VideoUploader({ onVideoUploaded, className = '' }) {
       {error && (
         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center">
-            <div className="text-red-500 mr-2">⚠️</div>
+            <div className="text-terra mr-2">⚠️</div>
             <p className="text-red-700 text-sm">{error}</p>
           </div>
         </div>

@@ -109,12 +109,12 @@ function AccessCodeAuth({ onSuccess }) {
   const isLocked = lockoutTime && Date.now() < lockoutTime
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-tile flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-lg rounded-3xl mb-6 border border-white/20">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-paper-deep rounded mb-6 border border-ink/20">
+            <svg className="w-10 h-10 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
@@ -123,7 +123,7 @@ function AccessCodeAuth({ onSuccess }) {
         </div>
 
         {/* Form */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+        <div className="bg-paper-deep rounded p-8 shadow-edge border border-ink/20">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Code Input */}
             <div>
@@ -136,7 +136,7 @@ function AccessCodeAuth({ onSuccess }) {
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 disabled={isLocked}
                 placeholder="ENTER-CODE-HERE"
-                className="w-full px-6 py-4 bg-white/10 border-2 border-white/20 rounded-2xl text-white text-center text-xl font-mono tracking-widest placeholder-purple-300/50 focus:outline-none focus:ring-4 focus:ring-purple-500/50 focus:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed uppercase"
+                className="w-full px-6 py-4 bg-paper-deep border-2 border-ink/20 rounded text-white text-center text-xl font-mono tracking-widest placeholder-purple-300/50 focus:outline-none focus:ring-4 focus:ring-purple-500/50 focus:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed uppercase"
                 maxLength={20}
                 required
                 autoComplete="off"
@@ -146,7 +146,7 @@ function AccessCodeAuth({ onSuccess }) {
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-3 p-4 bg-red-500/20 border-2 border-red-400/50 rounded-2xl text-red-100">
+              <div className="flex items-center gap-3 p-4 bg-terra/20 border-2 border-red-400/50 rounded text-red-100">
                 <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -156,7 +156,7 @@ function AccessCodeAuth({ onSuccess }) {
 
             {/* Lockout Timer */}
             {isLocked && (
-              <div className="flex items-center gap-3 p-4 bg-yellow-500/20 border-2 border-yellow-400/50 rounded-2xl text-yellow-100">
+              <div className="flex items-center gap-3 p-4 bg-saffron/20 border-2 border-yellow-400/50 rounded text-yellow-100">
                 <svg className="w-6 h-6 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
@@ -171,7 +171,7 @@ function AccessCodeAuth({ onSuccess }) {
             <button
               type="submit"
               disabled={loading || isLocked || !code.trim()}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+              className="w-full py-4 bg-tile hover:opacity-90 text-white font-bold text-lg rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 hover:shadow-edge transform hover:scale-105 active:scale-95"
             >
               {loading ? (
                 <>
@@ -192,7 +192,7 @@ function AccessCodeAuth({ onSuccess }) {
           </form>
 
           {/* Info */}
-          <div className="mt-6 pt-6 border-t border-white/10">
+          <div className="mt-6 pt-6 border-t border-ink/15">
             <div className="flex items-start gap-3 text-sm text-purple-200">
               <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

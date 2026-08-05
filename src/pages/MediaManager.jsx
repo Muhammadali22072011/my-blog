@@ -35,7 +35,7 @@ function MediaManager() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md mx-auto text-center">
-          <div className="text-red-500 text-6xl mb-4">🔒</div>
+          <div className="text-terra text-6xl mb-4">🔒</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Access Denied
           </h1>
