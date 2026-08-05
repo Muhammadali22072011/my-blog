@@ -1,177 +1,214 @@
-// Vercel Edge Function для OG-тегов
+// Vercel Edge Function: серверные OG-теги для ботов мессенджеров.
 //
-// Ключ и URL раньше были захардкожены прямо в файле и лежали в публичном
-// репозитории. Теперь берутся из переменных окружения Vercel.
+// vercel.json переписывает /post/:id на этот обработчик, если в User-Agent
+// видно бота. Обычные читатели сюда не попадают.
+//
+// Что здесь исправлено:
+//  1. Ключ Supabase и адрес проекта были захардкожены в файле публичного
+//     репозитория. Теперь берутся из переменных окружения Vercel.
+//  2. Заголовок и описание подставлялись в HTML без экранирования. Одна
+//     двойная кавычка в заголовке поста разрывала мета-тег, и превью
+//     ломалось; кавычка с угловыми скобками — это уже инъекция разметки.
+//  3. Адрес izzatullaev.uz был вписан в код, хотя канонический домен всюду
+//     остальное — muhammadali-blog.vercel.app. Боты получали ссылку на
+//     чужой домен. Теперь адрес берётся из заголовков запроса.
+//  4. Отсутствие переменных окружения отдавало 500 — превью ломалось
+//     полностью. Теперь функция отдаёт карточку сайта по умолчанию.
+
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+
+const SITE_NAME = 'Muhammadali Izzatullaev'
+const SITE_TAGLINE = 'Журнал о разработке, искусственном интеллекте и ремесле'
 
 export const config = {
   runtime: 'edge',
 }
 
-export default async function handler(req) {
-  if (!supabaseUrl || !supabaseKey) {
-    return new Response('Supabase credentials are not configured', { status: 500 })
-  }
+/** Экранирование для подстановки в текст и в значения атрибутов */
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 
+/** Домен берётся из запроса, а не из константы в коде */
+function originOf(req) {
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host')
+  const proto = req.headers.get('x-forwarded-proto') || 'https'
+  if (host) return `${proto}://${host}`
+  return new URL(req.url).origin
+}
+
+function getTitle(content) {
+  if (!content) return 'Материал без названия'
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('# ')) {
+      const title = trimmed.slice(2).trim()
+      if (title) return title
+    }
+  }
+  return 'Материал без названия'
+}
+
+function getDescription(content) {
+  if (!content) return SITE_TAGLINE
+  const plain = content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/^#+ .*/gm, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/(\*\*|\+\+|__)(.*?)\1/g, '$2')
+    .replace(/\*([^*\n]+)\*/g, '$1')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/^\s*>\s?/gm, ' ')
+    .replace(/^\s*[-*+]\s+/gm, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (plain.length < 10) return SITE_TAGLINE
+  return plain.length <= 160 ? plain : `${plain.slice(0, 160).trim()}…`
+}
+
+/** Абсолютный URL картинки из любого встречающегося в базе формата */
+function getImageUrl(post) {
+  const candidate = post.featured_image || post.og_image
+  if (!candidate || typeof candidate !== 'string') return null
+
+  const src = candidate.trim()
+  if (/^https?:\/\//i.test(src)) return src
+  if (!supabaseUrl) return null
+
+  const clean = src.replace(/^\/+/, '')
+  const root = `${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/public`
+
+  if (clean.startsWith('storage/v1/object/public/')) {
+    return `${supabaseUrl.replace(/\/+$/, '')}/${clean}`
+  }
+  // Путь уже содержит имя bucket'а
+  if (/^[a-z0-9][a-z0-9._-]*\//i.test(clean)) return `${root}/${clean}`
+  return `${root}/images/blog-images/${clean}`
+}
+
+function renderPage({ title, description, image, url, type }) {
+  const t = escapeHtml(title)
+  const d = escapeHtml(description)
+  const u = escapeHtml(url)
+  const img = image ? escapeHtml(image) : null
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${t} — ${SITE_NAME}</title>
+
+  <meta name="description" content="${d}">
+  <meta name="author" content="${escapeHtml(SITE_NAME)}">
+
+  <meta property="og:type" content="${escapeHtml(type)}">
+  <meta property="og:url" content="${u}">
+  <meta property="og:title" content="${t}">
+  <meta property="og:description" content="${d}">
+  <meta property="og:site_name" content="${escapeHtml(SITE_NAME)}">
+  <meta property="og:locale" content="ru_RU">
+${
+  img
+    ? `  <meta property="og:image" content="${img}">
+  <meta property="og:image:secure_url" content="${img}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${t}">`
+    : ''
+}
+
+  <meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}">
+  <meta name="twitter:url" content="${u}">
+  <meta name="twitter:title" content="${t}">
+  <meta name="twitter:description" content="${d}">
+${img ? `  <meta name="twitter:image" content="${img}">` : ''}
+
+  <link rel="canonical" href="${u}">
+  <meta http-equiv="refresh" content="0;url=${u}">
+</head>
+<body>
+  <h1>${t}</h1>
+  <p>${d}</p>
+  <p><a href="${u}">Открыть материал</a></p>
+</body>
+</html>`
+}
+
+export default async function handler(req) {
+  const origin = originOf(req)
   const url = new URL(req.url)
   const postId = url.searchParams.get('postId')
 
-  // Только целое число: строка вида `1 or 1=1` не должна попадать в запрос
-  if (!postId || !/^\d+$/.test(postId)) {
-    return new Response('Missing or invalid postId', { status: 400 })
-  }
-
-  try {
-    // Получаем пост из Supabase через fetch
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/posts?id=eq.${postId}&status=eq.published&select=*`,
+  // Запасная карточка: отдаётся вместо ошибки, чтобы ссылка в мессенджере
+  // показывала хотя бы описание сайта, а не пустой прямоугольник
+  const fallback = (status = 200) =>
+    new Response(
+      renderPage({
+        title: SITE_NAME,
+        description: SITE_TAGLINE,
+        image: `${origin}/og-image.png`,
+        url: postId && /^\d+$/.test(postId) ? `${origin}/post/${postId}` : origin,
+        type: 'website',
+      }),
       {
+        status,
         headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
         },
       }
     )
 
+  // Только целое число: строка вида `1 or 1=1` не должна попадать в запрос
+  if (!postId || !/^\d+$/.test(postId)) return fallback(400)
+
+  // Переменные окружения не заданы — карточка сайта вместо 500
+  if (!supabaseUrl || !supabaseKey) return fallback()
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl.replace(/\/+$/, '')}/rest/v1/posts` +
+        `?id=eq.${postId}&status=eq.published&select=content,featured_image,og_image,created_at,updated_at`,
+      {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      }
+    )
+
+    if (!response.ok) return fallback()
+
     const posts = await response.json()
-    const post = posts[0]
+    const post = Array.isArray(posts) ? posts[0] : null
+    if (!post) return fallback(404)
 
-    if (!post) {
-      return new Response('Post not found', { status: 404 })
-    }
-
-    // Извлекаем заголовок из контента
-    const getTitle = (content) => {
-      if (!content) return 'Untitled Post'
-      const lines = content.split('\n')
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('# ')) {
-          return trimmed.substring(2)
-        }
+    return new Response(
+      renderPage({
+        title: getTitle(post.content),
+        description: getDescription(post.content),
+        image: getImageUrl(post) || `${origin}/og-image.png`,
+        url: `${origin}/post/${postId}`,
+        type: 'article',
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        },
       }
-      return 'Untitled Post'
-    }
-
-    // Извлекаем описание
-    const getDescription = (content) => {
-      if (!content) return 'Read this blog post'
-      const plainText = content
-        // Удаляем HTML теги (включая <span>, <strong>, <em> и т.д.)
-        .replace(/<[^>]*>/g, '')
-        .replace(/^#+ .*/gm, '')
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/\*(.*?)\*/g, '$1')
-        .replace(/`(.*?)`/g, '$1')
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        .replace(/>\s.*/g, '')
-        .replace(/- .*/g, '')
-        .replace(/\n+/g, ' ')
-        // Удаляем множественные пробелы
-        .replace(/\s+/g, ' ')
-        .trim()
-      return plainText.length <= 160 ? plainText : plainText.substring(0, 160) + '...'
-    }
-
-    // Формируем URL изображения
-    const getImageUrl = (post) => {
-      console.log('Post featured_image:', post.featured_image)
-      console.log('Post og_image:', post.og_image)
-
-      if (post.featured_image) {
-        // Если уже полный URL
-        if (post.featured_image.startsWith('http')) {
-          return post.featured_image
-        }
-        // Если путь начинается с images/
-        if (post.featured_image.startsWith('images/')) {
-          return `${supabaseUrl}/storage/v1/object/public/${post.featured_image}`
-        }
-        // Если путь начинается со слэша
-        if (post.featured_image.startsWith('/')) {
-          return `${supabaseUrl}/storage/v1/object/public${post.featured_image}`
-        }
-        // Иначе добавляем полный путь
-        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${post.featured_image}`
-      }
-
-      if (post.og_image) {
-        if (post.og_image.startsWith('http')) {
-          return post.og_image
-        }
-        if (post.og_image.startsWith('images/')) {
-          return `${supabaseUrl}/storage/v1/object/public/${post.og_image}`
-        }
-        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${post.og_image}`
-      }
-
-      return null
-    }
-
-    const title = getTitle(post.content)
-    const description = getDescription(post.content)
-    const imageUrl = getImageUrl(post)
-    const postUrl = `https://izzatullaev.uz/post/${postId}`
-
-    console.log('Generated OG tags:', { title, description, imageUrl, postUrl })
-
-    // Генерируем HTML с правильными OG тегами
-    const html = `
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} | Muhammadali Blog</title>
-  
-  <!-- Basic Meta Tags -->
-  <meta name="description" content="${description}">
-  <meta name="author" content="Muhammadali">
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="${postUrl}">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:site_name" content="Muhammadali Blog">
-  <meta property="og:locale" content="ru_RU">
-  ${imageUrl ? `
-  <meta property="og:image" content="${imageUrl}">
-  <meta property="og:image:secure_url" content="${imageUrl}">
-  <meta property="og:image:type" content="image/jpeg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="${title}">
-  ` : ''}
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="${postUrl}">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${description}">
-  ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}">` : ''}
-  
-  <!-- Redirect to actual page -->
-  <meta http-equiv="refresh" content="0;url=${postUrl}">
-  <script>window.location.href = "${postUrl}";</script>
-</head>
-<body>
-  <h1>${title}</h1>
-  <p>${description}</p>
-  <p>Redirecting to <a href="${postUrl}">${postUrl}</a>...</p>
-</body>
-</html>
-`
-
-    return new Response(html, {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      },
-    })
+    )
   } catch (error) {
-    console.error('Error:', error)
-    return new Response('Internal Server Error', { status: 500 })
+    console.error('Ошибка формирования OG-карточки:', error)
+    return fallback()
   }
 }
