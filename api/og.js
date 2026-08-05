@@ -9,14 +9,23 @@
 //  2. Заголовок и описание подставлялись в HTML без экранирования. Одна
 //     двойная кавычка в заголовке поста разрывала мета-тег, и превью
 //     ломалось; кавычка с угловыми скобками — это уже инъекция разметки.
-//  3. Адрес izzatullaev.uz был вписан в код, хотя канонический домен всюду
-//     остальное — muhammadali-blog.vercel.app. Боты получали ссылку на
-//     чужой домен. Теперь адрес берётся из заголовков запроса.
+//  3. Домен izzatullaev.uz был вписан в код константой. Сам адрес верный —
+//     это и есть рабочий домен сайта, — но жёстко зашитый он ломается на
+//     preview-сборках Vercel. Теперь берётся из заголовков запроса.
 //  4. Отсутствие переменных окружения отдавало 500 — превью ломалось
 //     полностью. Теперь функция отдаёт карточку сайта по умолчанию.
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+/*
+ * Переменные читаются ВНУТРИ обработчика, а не на уровне модуля.
+ * В edge-рантайме Vercel обращение к process.env на верхнем уровне
+ * происходит на этапе сборки бандла, и значения нередко оказываются
+ * пустыми — из-за этого функция уходила в запасную карточку и превью
+ * поста показывало описание сайта вместо заголовка материала.
+ */
+const readConfig = () => ({
+  url: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  key: process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY,
+})
 
 const SITE_NAME = 'Muhammadali Izzatullaev'
 const SITE_TAGLINE = 'Журнал о разработке, искусственном интеллекте и ремесле'
@@ -75,7 +84,7 @@ function getDescription(content) {
 }
 
 /** Абсолютный URL картинки из любого встречающегося в базе формата */
-function getImageUrl(post) {
+function getImageUrl(post, supabaseUrl) {
   const candidate = post.featured_image || post.og_image
   if (!candidate || typeof candidate !== 'string') return null
 
@@ -144,6 +153,7 @@ ${img ? `  <meta name="twitter:image" content="${img}">` : ''}
 }
 
 export default async function handler(req) {
+  const { url: supabaseUrl, key: supabaseKey } = readConfig()
   const origin = originOf(req)
   const url = new URL(req.url)
   const postId = url.searchParams.get('postId')
@@ -196,7 +206,7 @@ export default async function handler(req) {
       renderPage({
         title: getTitle(post.content),
         description: getDescription(post.content),
-        image: getImageUrl(post) || `${origin}/og-image.png`,
+        image: getImageUrl(post, supabaseUrl) || `${origin}/og-image.png`,
         url: `${origin}/post/${postId}`,
         type: 'article',
       }),

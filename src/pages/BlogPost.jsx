@@ -317,10 +317,12 @@ function BlogPost() {
           <aside className="lg:col-span-4">
             <div className="sticky top-28 space-y-10">
               <TableOfContents content={post.content} />
+              {/* seoTags — уже мемоизированный массив; литерал здесь
+                  создавал новый объект на каждый рендер и зацикливал виджет */}
               <RelatedPostsWidget
                 currentPostId={post.id}
                 category={post.category}
-                tags={post.tags || []}
+                tags={seoTags}
               />
             </div>
           </aside>

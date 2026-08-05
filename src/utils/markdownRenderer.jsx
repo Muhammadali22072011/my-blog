@@ -31,8 +31,7 @@ import { getFullImageUrl } from './postFormat'
 
 // Порядок важен: сначала то, что не должно разбираться внутри (код, span),
 // затем изображения и ссылки, затем начертания.
-const INLINE_PATTERN = new RegExp(
-  [
+const INLINE_SOURCE = [
     /(?<code>`[^`\n]+`)/.source,
     /(?<span><span\s+style="(?<spanStyle>[^"]*)"\s*>(?<spanText>[\s\S]*?)<\/span>)/.source,
     /(?<img>!\[(?<imgAlt>[^\]]*)\]\((?<imgUrl>[^)\s]+)\))/.source,
@@ -40,9 +39,23 @@ const INLINE_PATTERN = new RegExp(
     /(?<strong>\*\*(?<strongText>[\s\S]+?)\*\*|\+\+(?<strongText2>[\s\S]+?)\+\+|__(?<strongText3>[\s\S]+?)__)/.source,
     /(?<em>\*(?<emText>[^*\n]+)\*|_(?<emText2>[^_\n]+)_)/.source,
     /(?<del>~~(?<delText>[\s\S]+?)~~)/.source,
-  ].join('|'),
-  'g'
-)
+].join('|')
+
+/*
+ * Регулярка создаётся ЗАНОВО на каждый вызов, а не переиспользуется одна
+ * общая с флагом g.
+ *
+ * Это не микрооптимизация наоборот, а исправление зависания. Разбор
+ * рекурсивный: содержимое `**жирного**` снова уходит в эту же функцию.
+ * У regexp с флагом g состояние lastIndex живёт в самом объекте — вложенный
+ * вызов сбрасывал его, внешний цикл после возврата продолжал с чужой,
+ * меньшей позиции и заново находил тот же фрагмент. Получался бесконечный
+ * цикл: страница любого поста с `**жирным**` намертво вешала вкладку.
+ *
+ * V8 кеширует компиляцию по паре «исходник + флаги», поэтому создание
+ * объекта здесь практически ничего не стоит.
+ */
+const inlineMatcher = () => new RegExp(INLINE_SOURCE, 'g')
 
 // Свойства, которые автор поста может задать через <span style="…">.
 // Всё остальное отбрасывается, чтобы разметка не могла подгрузить
@@ -107,13 +120,14 @@ export function processInlineMarkdown(text) {
   let lastIndex = 0
   let key = 0
 
-  INLINE_PATTERN.lastIndex = 0
+  // Своя регулярка на каждый вызов — рекурсия не должна портить lastIndex
+  const re = inlineMatcher()
   let match
 
-  while ((match = INLINE_PATTERN.exec(source)) !== null) {
+  while ((match = re.exec(source)) !== null) {
     // Защита от нулевой длины совпадения — иначе бесконечный цикл
     if (match[0].length === 0) {
-      INLINE_PATTERN.lastIndex += 1
+      re.lastIndex += 1
       continue
     }
 

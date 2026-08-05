@@ -1,86 +1,79 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../context/DataContext'
+import { getPostTitle, getExcerpt, formatDateRu } from '../utils/postFormat'
 
-function RelatedPostsWidget({ currentPostId, category, tags = [] }) {
+/**
+ * Похожие материалы.
+ *
+ * Здесь было две поломки:
+ *
+ *  1. Результат держался в useState и пересчитывался эффектом, в
+ *     зависимостях которого стоял массив tags. С родительской страницы
+ *     приходило `post.tags || []` — новый массив на каждый рендер, поэтому
+ *     эффект срабатывал всегда, звал setRelated с новым массивом, вызывал
+ *     ре-рендер и запускал себя снова. Бесконечный цикл, который грел
+ *     процессор всё время, пока открыт пост. Теперь это useMemo со
+ *     строковым ключом вместо массива.
+ *
+ *  2. Анонс собирался как `content.replace(/[*`]/g, '')` — HTML-теги
+ *     не трогались, и в блоке светился сырой `<span style="color: #ef4444…`.
+ *     Теперь используется общий toPlainText из postFormat.
+ */
+function RelatedPostsWidget({ currentPostId, category, tags }) {
   const { posts } = useData()
-  const [related, setRelated] = useState([])
 
-  useEffect(() => {
-    const calculateRelevance = (post) => {
-      let score = 0
-      if (post.category === category) score += 3
-      if (post.tags) {
-        const commonTags = post.tags.filter(t => tags.includes(t))
-        score += commonTags.length * 2
+  // Строка вместо массива — стабильная зависимость
+  const tagsKey = Array.isArray(tags) ? tags.filter(Boolean).join(',') : ''
+
+  const related = useMemo(() => {
+    const tagList = tagsKey ? tagsKey.split(',') : []
+
+    const relevance = (post) => {
+      let score = post.category === category ? 3 : 0
+      if (Array.isArray(post.tags)) {
+        score += post.tags.filter((t) => tagList.includes(t)).length * 2
       }
       return score
     }
 
-    const relatedPosts = posts
-      .filter(p => p.id !== currentPostId && p.status === 'published')
-      .map(p => ({ ...p, relevance: calculateRelevance(p) }))
-      .filter(p => p.relevance > 0)
-      .sort((a, b) => b.relevance - a.relevance)
+    return (posts || [])
+      .filter((p) => p.id !== currentPostId && p.status === 'published')
+      .map((p) => ({ post: p, score: relevance(p) }))
+      .filter((p) => p.score > 0)
+      .sort((a, b) => b.score - a.score)
       .slice(0, 4)
-
-    setRelated(relatedPosts)
-  }, [posts, currentPostId, category, tags])
-
-  const getPostTitle = (post) => {
-    if (post.content) {
-      const lines = post.content.split('\n')
-      for (const line of lines) {
-        if (line.trim().startsWith('# ')) {
-          return line.trim().substring(2)
-        }
-      }
-    }
-    return post.excerpt || 'Untitled'
-  }
-
-  const getExcerpt = (content) => {
-    const text = content.replace(/^#+ .*/gm, '').replace(/[*`]/g, '').trim()
-    return text.substring(0, 100) + (text.length > 100 ? '...' : '')
-  }
+      .map((p) => p.post)
+  }, [posts, currentPostId, category, tagsKey])
 
   if (related.length === 0) return null
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg sticky top-24">
-      <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-        Related Posts
-      </h3>
-      <div className="space-y-3">
-        {related.map(post => (
-          <Link
-            key={post.id}
-            to={`/post/${post.id}`}
-            className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group"
-          >
-            <h4 className="font-medium text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-1">
-              {getPostTitle(post)}
-            </h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-              {getExcerpt(post.content)}
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              {post.category && (
-                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs">
-                  {post.category}
-                </span>
-              )}
-              <span className="text-xs text-gray-400">
-                {new Date(post.created_at).toLocaleDateString()}
-              </span>
+    <section aria-labelledby="related-heading">
+      <h2 id="related-heading" className="label rule-b pb-2">
+        Похожее
+      </h2>
+
+      <div className="mt-1">
+        {related.map((post, i) => (
+          <Link key={post.id} to={`/post/${post.id}`} className="index-row group py-4">
+            <div className="flex items-baseline gap-3">
+              <span className="folio">{String(i + 1).padStart(2, '0')}</span>
+              <div className="min-w-0">
+                <h3 className="display text-lg leading-snug transition-colors group-hover:text-tile">
+                  {getPostTitle(post, 70)}
+                </h3>
+                <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-ink-soft">
+                  {getExcerpt(post.content, 90)}
+                </p>
+                <p className="label mt-2">{formatDateRu(post.created_at)}</p>
+              </div>
             </div>
           </Link>
         ))}
+        <div className="rule-t" />
       </div>
-    </div>
+    </section>
   )
 }
 

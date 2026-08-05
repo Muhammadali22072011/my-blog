@@ -33,13 +33,16 @@ function formatViews(count) {
 /**
  * Счётчик просмотров.
  *
- * Инкремент делается процедурой increment_post_views (см.
- * supabase/migrations/increment_post_views.sql). Прежняя схема
- * «прочитать views → записать views + 1» теряла просмотры при
- * одновременном заходе нескольких читателей: оба читали одно и то же
- * число и записывали одно и то же значение.
+ * Инкремент делает процедура increment_post_views в базе — она уже
+ * существует, и её аргумент называется post_id_param. Имя важно:
+ * PostgREST ищет функцию по имени аргумента и на post_id отвечает
+ * 404 PGRST202.
  *
- * Если процедура ещё не создана, происходит откат на старую схему,
+ * Прежняя схема «прочитать views → записать views + 1» на клиенте
+ * теряла просмотры: при одновременном заходе двух читателей оба
+ * получали одно число и записывали одно и то же значение.
+ *
+ * Если процедуры в базе не окажется, происходит откат на старую схему,
  * чтобы счётчик не пропал совсем.
  */
 function ViewCounter({ postId, showIcon = true }) {
@@ -50,43 +53,47 @@ function ViewCounter({ postId, showIcon = true }) {
 
     let cancelled = false
 
+    const readCurrent = async () => {
+      const { data } = await supabase
+        .from('posts')
+        .select('views')
+        .eq('id', postId)
+        .maybeSingle()
+      return data?.views ?? 0
+    }
+
     const run = async () => {
-      const alreadyViewed = readViewed().includes(postId)
-
       try {
-        if (!alreadyViewed) {
-          const { data, error } = await supabase.rpc('increment_post_views', {
-            post_id: postId,
-          })
-
-          if (!error) {
-            if (!cancelled) setViews(data ?? 0)
-            markViewed(postId)
-            return
-          }
+        if (readViewed().includes(postId)) {
+          const current = await readCurrent()
+          if (!cancelled) setViews(current)
+          return
         }
 
-        // Только чтение — либо просмотр уже засчитан, либо RPC недоступна
-        const { data: post } = await supabase
-          .from('posts')
-          .select('views')
-          .eq('id', postId)
-          .maybeSingle()
+        const { error } = await supabase.rpc('increment_post_views', {
+          post_id_param: postId,
+        })
 
-        const current = post?.views ?? 0
+        if (!error) {
+          markViewed(postId)
+          // Процедура ничего не возвращает — читаем итог отдельным запросом
+          const current = await readCurrent()
+          if (!cancelled) setViews(current)
+          return
+        }
+
+        // Запасной путь без процедуры: гонка возможна, но счётчик живёт
+        const current = await readCurrent()
         if (!cancelled) setViews(current)
 
-        if (!alreadyViewed) {
-          // Запасной путь без процедуры: гонка возможна, но счётчик живёт
-          const { error: updateError } = await supabase
-            .from('posts')
-            .update({ views: current + 1 })
-            .eq('id', postId)
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({ views: current + 1 })
+          .eq('id', postId)
 
-          if (!updateError) {
-            if (!cancelled) setViews(current + 1)
-            markViewed(postId)
-          }
+        if (!updateError) {
+          markViewed(postId)
+          if (!cancelled) setViews(current + 1)
         }
       } catch (error) {
         console.error('Ошибка счётчика просмотров:', error)

@@ -1013,11 +1013,11 @@ class SupabaseService {
   // Увеличение счетчика просмотров поста
   async incrementPostViews(postId) {
     try {
-      // Имя аргумента должно совпадать с сигнатурой функции в базе
-      // (supabase/migrations/increment_post_views.sql). Раньше здесь
-      // передавался post_id_param, которого в функции нет.
+      // Аргумент называется post_id_param — именно так функция заведена
+      // в базе. PostgREST ищет по имени аргумента и на post_id отвечает
+      // 404 PGRST202, поэтому переименовывать здесь ничего нельзя.
       const { data, error } = await supabase.rpc('increment_post_views', {
-        post_id: postId
+        post_id_param: postId
       })
 
       if (error) throw error

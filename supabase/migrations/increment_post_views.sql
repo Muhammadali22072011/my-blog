@@ -1,23 +1,29 @@
 -- Атомарный инкремент просмотров.
 --
--- Заменяет схему «прочитать views → записать views + 1» на клиенте:
--- при одновременном заходе нескольких читателей оба читали одно и то же
--- значение и записывали одно и то же число, поэтому просмотры терялись.
+-- ВАЖНО: функция с таким именем в базе УЖЕ ЕСТЬ, и её аргумент называется
+-- post_id_param. Выполнять этот файл нужно только если вы хотите заменить
+-- существующую реализацию — например, чтобы добавить проверку статуса.
 --
--- Применение:
---   Supabase Dashboard → SQL Editor → выполнить этот файл.
+-- Имя аргумента менять нельзя: PostgREST ищет функцию по именам аргументов,
+-- и вызов с post_id вместо post_id_param возвращает 404 PGRST202.
+-- Именно поэтому здесь сначала DROP: create or replace не умеет менять
+-- ни имя аргумента, ни тип возвращаемого значения.
+--
+-- Применение: Supabase Dashboard → SQL Editor.
 
-create or replace function public.increment_post_views(post_id bigint)
-returns bigint
+drop function if exists public.increment_post_views(bigint);
+drop function if exists public.increment_post_views(integer);
+
+create function public.increment_post_views(post_id_param bigint)
+returns void
 language sql
 security definer
 set search_path = public
 as $$
   update public.posts
      set views = coalesce(views, 0) + 1
-   where id = post_id
-     and status = 'published'
-  returning views;
+   where id = post_id_param
+     and status = 'published';
 $$;
 
 -- Право вызова у анонимных читателей: функция может увеличить счётчик,
