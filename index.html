@@ -36,13 +36,13 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://muhammadali-blog.vercel.app/" />
+    <meta property="og:url" content="https://izzatullaev.uz/" />
     <meta property="og:title" content="Muhammadali Izzatullaev — записки о коде, ИИ и ремесле" />
     <meta
       property="og:description"
       content="Личный журнал: разработка, искусственный интеллект, инструменты и наблюдения о ремесле программиста."
     />
-    <meta property="og:image" content="https://muhammadali-blog.vercel.app/og-image.png" />
+    <meta property="og:image" content="https://izzatullaev.uz/og-image.png" />
     <meta property="og:site_name" content="Muhammadali Izzatullaev" />
     <meta property="og:locale" content="ru_RU" />
     <meta property="og:locale:alternate" content="en_US" />
@@ -55,9 +55,9 @@
       name="twitter:description"
       content="Личный журнал: разработка, искусственный интеллект, инструменты и наблюдения о ремесле программиста."
     />
-    <meta name="twitter:image" content="https://muhammadali-blog.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="https://izzatullaev.uz/og-image.png" />
 
-    <link rel="canonical" href="https://muhammadali-blog.vercel.app/" />
+    <link rel="canonical" href="https://izzatullaev.uz/" />
 
     <!-- Иконки. Все файлы генерируются: node scripts/build-assets.mjs -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -80,10 +80,30 @@
     -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Запрошено ровно то, что используется, и ни одним начертанием больше.
+
+      Первая версия тянула Literata переменной по осям opsz и wght, да ещё
+      с курсивом: 10 файлов и 476 КБ только на кириллицу с латиницей —
+      и всё это блокировало первую отрисовку. Стало 6 файлов и 172 КБ:
+      Literata одним начертанием 600 (только заголовки), Golos Text и
+      JetBrains Mono переменными в узком диапазоне.
+
+      Загрузка неблокирующая: media="print" снимается по onload, поэтому
+      текст показывается сразу системной антиквой и подменяется по готовности.
+    -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..600&family=Golos+Text:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
+      media="print"
+      onload="this.media='all'; this.onload=null"
+      href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600&family=Golos+Text:wght@400..600&family=JetBrains+Mono:wght@400..500&display=swap"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,600&family=Golos+Text:wght@400..600&family=JetBrains+Mono:wght@400..500&display=swap"
+      />
+    </noscript>
 
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -91,13 +111,13 @@
         "@context": "https://schema.org",
         "@type": "Blog",
         "name": "Muhammadali Izzatullaev",
-        "url": "https://muhammadali-blog.vercel.app/",
+        "url": "https://izzatullaev.uz/",
         "description": "Личный журнал о разработке, искусственном интеллекте и ремесле программиста.",
         "inLanguage": ["ru", "en", "uz"],
         "author": {
           "@type": "Person",
           "name": "Muhammadali Izzatullaev",
-          "url": "https://muhammadali-blog.vercel.app/"
+          "url": "https://izzatullaev.uz/"
         },
         "publisher": {
           "@type": "Person",
@@ -110,10 +130,10 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Muhammadali Izzatullaev",
-        "url": "https://muhammadali-blog.vercel.app/",
+        "url": "https://izzatullaev.uz/",
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://muhammadali-blog.vercel.app/search?q={search_term_string}",
+          "target": "https://izzatullaev.uz/search?q={search_term_string}",
           "query-input": "required name=search_term_string"
         }
       }

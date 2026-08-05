@@ -313,7 +313,7 @@ export const renderMarkdown = (text, options = {}) => {
       elements.push(
         <blockquote
           key={key++}
-          className="my-8 border-l-2 border-tile py-1 pl-6 font-serif text-[1.15em] italic text-ink/85"
+          className="my-8 border-l-2 border-tile py-1 pl-6 text-[1.1em] leading-relaxed text-ink/85"
         >
           {processInlineMarkdown(quote.join(' '))}
         </blockquote>

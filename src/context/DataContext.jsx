@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import supabaseService from '../services/SupabaseService'
-import { supabase } from '../config/supabase'
+import { supabase, supabaseConfigError } from '../config/supabase'
 
 const DataContext = createContext()
 
@@ -34,6 +34,13 @@ export const DataProvider = ({ children }) => {
     let cancelled = false
 
     const initializeDatabase = async () => {
+      // Конфигурация битая — показываем понятный экран вместо белого
+      if (supabaseConfigError) {
+        setError(supabaseConfigError)
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
         setError(null)

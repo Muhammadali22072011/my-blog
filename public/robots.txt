@@ -12,4 +12,4 @@ Disallow: /register
 # Директив Allow: /src/, /components/, /pages/, /services/ здесь быть не должно:
 # это пути в исходниках, которых на собранном сайте не существует.
 
-Sitemap: https://muhammadali-blog.vercel.app/sitemap.xml
+Sitemap: https://izzatullaev.uz/sitemap.xml

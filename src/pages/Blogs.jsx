@@ -166,7 +166,7 @@ function Blogs() {
                 placeholder="слово, тема, имя…"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full border-0 border-b border-ink/25 bg-transparent px-0 py-2.5 font-serif text-xl outline-none transition-colors placeholder:text-ink-faint focus:border-tile"
+                className="w-full border-0 border-b border-ink/25 bg-transparent px-0 py-2.5 text-xl outline-none transition-colors placeholder:text-ink-faint focus:border-tile"
               />
               {searchQuery && (
                 <button
@@ -356,7 +356,7 @@ function Blogs() {
                                   <span className="folio w-24 flex-shrink-0">
                                     {formatDateRu(post.created_at)}
                                   </span>
-                                  <span className="font-serif text-lg transition-colors group-hover:text-tile">
+                                  <span className="text-lg transition-colors group-hover:text-tile">
                                     {getPostTitle(post)}
                                   </span>
                                 </Link>

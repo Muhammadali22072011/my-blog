@@ -31,7 +31,7 @@ function CommentItem({ comment, depth = 0, onReply }) {
     <div className={depth > 0 ? 'rule-l ml-5 pl-5' : ''}>
       <article className="py-4">
         <div className="flex items-baseline gap-3">
-          <span className="font-serif font-medium text-ink">{name}</span>
+          <span className="font-medium text-ink">{name}</span>
           <span className="label">{formatDate(comment.created_at)}</span>
         </div>
         <p className="mt-2 whitespace-pre-line leading-relaxed text-ink/85">{comment.content}</p>
@@ -178,7 +178,7 @@ function Comments({ postId }) {
           onChange={(e) => setAuthorName(e.target.value)}
           maxLength={80}
           required
-          className="mt-1 w-full border-0 border-b border-ink/25 bg-transparent px-0 py-2 font-serif outline-none transition-colors focus:border-tile"
+          className="mt-1 w-full border-0 border-b border-ink/25 bg-transparent px-0 py-2 outline-none transition-colors focus:border-tile"
         />
 
         <label htmlFor="comment-body" className="label mt-6 block">
@@ -191,7 +191,7 @@ function Comments({ postId }) {
           rows={4}
           maxLength={MAX_LENGTH}
           required
-          className="mt-1 w-full resize-none border border-ink/20 bg-transparent p-3 font-serif outline-none transition-colors focus:border-tile"
+          className="mt-1 w-full resize-none border border-ink/20 bg-transparent p-3 outline-none transition-colors focus:border-tile"
         />
 
         <div className="mt-4 flex items-center gap-5">

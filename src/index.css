@@ -54,33 +54,30 @@
     scroll-padding-top: 6rem;
   }
 
+  /*
+   * Зерно бумаги рисуется фоном самого body.
+   *
+   * Раньше это был ::before на весь экран с position: fixed и
+   * mix-blend-mode. Такое сочетание заставляет браузер пересобирать
+   * композицию ВСЕЙ страницы на каждый кадр прокрутки — отсюда рывки,
+   * особенно заметные на телефоне. Фоновая картинка рисуется один раз
+   * в слой фона и не стоит ничего.
+   */
   body {
     font-family: 'Golos Text', system-ui, sans-serif;
     font-size: 1.0625rem;
     font-optical-sizing: auto;
     background-color: rgb(var(--paper));
+    background-image: theme('backgroundImage.grain');
     color: rgb(var(--ink));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
-    transition: background-color 0.4s ease, color 0.4s ease;
   }
 
-  /* Зерно бумаги поверх фона — придаёт странице материальность */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-image: theme('backgroundImage.grain');
-    opacity: 0.28;
-    mix-blend-mode: multiply;
-  }
-
-  .dark body::before {
-    opacity: 0.14;
-    mix-blend-mode: screen;
+  /* На тёмном фоне чёрный шум не виден — фактура снимается */
+  .dark body {
+    background-image: none;
   }
 
   h1, h2, h3, h4, h5, h6 {

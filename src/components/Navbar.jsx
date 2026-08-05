@@ -48,7 +48,7 @@ function Navbar() {
   }, [location.pathname])
 
   return (
-    <header className="above-grain sticky top-0 z-40 bg-paper/95 backdrop-blur-[2px]">
+    <header className="sticky top-0 z-40 bg-paper">
       {/* Изразцовая полоса — фирменная деталь, повторяется на всех страницах */}
       <div className="h-[3px] bg-tile" aria-hidden="true" />
 

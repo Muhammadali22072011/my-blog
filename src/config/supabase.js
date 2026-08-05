@@ -13,16 +13,35 @@ if (import.meta.env.DEV) {
   console.info(
     '[supabase] url:',
     supabaseUrl || '— не задан —',
-    '| anon key:',
+    '| ключ:',
     supabaseAnonKey ? 'задан' : '— не задан —'
   )
 }
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    'Не заданы VITE_SUPABASE_URL и/или VITE_SUPABASE_ANON_KEY. ' +
-      'Скопируйте .env.example в .env.local и заполните значения.'
-  )
+/**
+ * Причина неработающей конфигурации — или null, если всё на месте.
+ *
+ * Раньше при отсутствии переменных окружения createClient бросал
+ * исключение прямо при импорте модуля, то есть ДО того, как React успевал
+ * что-либо отрисовать. Посетитель видел абсолютно белую страницу без
+ * единого слова, а в консоли — только "supabaseKey is required".
+ * Теперь клиент создаётся с заглушкой, импорт проходит, а приложение
+ * показывает внятный экран с описанием проблемы.
+ */
+export const supabaseConfigError = (() => {
+  const missing = []
+  if (!supabaseUrl) missing.push('VITE_SUPABASE_URL')
+  if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY')
+  if (missing.length === 0) return null
+  return `Не заданы переменные окружения: ${missing.join(', ')}. ` +
+    'Локально — скопируйте .env.example в .env.local; на Vercel — задайте их в настройках проекта.'
+})()
+
+if (supabaseConfigError) {
+  console.error(supabaseConfigError)
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
+)

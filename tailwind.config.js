@@ -63,7 +63,9 @@ export default {
         display: ['Literata', 'Georgia', 'serif'],
         // Длинные тексты: гротеск, рисованный от кириллицы
         sans: ['"Golos Text"', 'system-ui', 'sans-serif'],
-        // Антиква для цитат и врезок
+        // ВНИМАНИЕ: Literata подключена ОДНИМ начертанием 600 и только
+        // для заголовков. Для текста весом 400 её использовать нельзя —
+        // браузер подставит 600 и набор станет слишком жирным.
         serif: ['Literata', 'Georgia', 'serif'],
         // Метаданные, цифры, код
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
@@ -135,8 +137,13 @@ export default {
       },
 
       backgroundImage: {
+        /*
+         * Зерно бумаги. Прозрачность задана прямо в SVG (0.09), потому что
+         * картинка кладётся фоном body — без mix-blend-mode, который раньше
+         * заставлял браузер композитить всю страницу на каждый кадр.
+         */
         grain:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E\")",
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E\")",
       },
 
       keyframes: {

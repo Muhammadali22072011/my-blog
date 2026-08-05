@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
-const SITE_URL = (process.env.SITE_URL || 'https://muhammadali-blog.vercel.app').replace(/\/+$/, '')
+const SITE_URL = (process.env.SITE_URL || 'https://izzatullaev.uz').replace(/\/+$/, '')
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 
