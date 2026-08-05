@@ -1,82 +1,113 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../config/supabase'
 
+const SESSION_KEY = 'viewed_posts'
+
+function readViewed() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function markViewed(postId) {
+  try {
+    const viewed = readViewed()
+    if (!viewed.includes(postId)) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify([...viewed, postId]))
+    }
+  } catch {
+    /* приватный режим — счётчик просто не запомнит просмотр */
+  }
+}
+
+function formatViews(count) {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`
+  return String(count)
+}
+
+/**
+ * Счётчик просмотров.
+ *
+ * Инкремент делается процедурой increment_post_views (см.
+ * supabase/migrations/increment_post_views.sql). Прежняя схема
+ * «прочитать views → записать views + 1» теряла просмотры при
+ * одновременном заходе нескольких читателей: оба читали одно и то же
+ * число и записывали одно и то же значение.
+ *
+ * Если процедура ещё не создана, происходит откат на старую схему,
+ * чтобы счётчик не пропал совсем.
+ */
 function ViewCounter({ postId, showIcon = true }) {
-  const [views, setViews] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [views, setViews] = useState(null)
 
   useEffect(() => {
     if (!postId) return
-    
-    const trackView = async () => {
+
+    let cancelled = false
+
+    const run = async () => {
+      const alreadyViewed = readViewed().includes(postId)
+
       try {
-        // Get current views
-        const { data: post, error: fetchError } = await supabase
+        if (!alreadyViewed) {
+          const { data, error } = await supabase.rpc('increment_post_views', {
+            post_id: postId,
+          })
+
+          if (!error) {
+            if (!cancelled) setViews(data ?? 0)
+            markViewed(postId)
+            return
+          }
+        }
+
+        // Только чтение — либо просмотр уже засчитан, либо RPC недоступна
+        const { data: post } = await supabase
           .from('posts')
           .select('views')
           .eq('id', postId)
-          .single()
+          .maybeSingle()
 
-        if (fetchError) throw fetchError
+        const current = post?.views ?? 0
+        if (!cancelled) setViews(current)
 
-        const currentViews = post?.views || 0
-        setViews(currentViews)
-
-        // Check if already viewed in this session
-        const viewedPosts = JSON.parse(sessionStorage.getItem('viewed_posts') || '[]')
-        
-        if (!viewedPosts.includes(postId)) {
-          // Increment view count
+        if (!alreadyViewed) {
+          // Запасной путь без процедуры: гонка возможна, но счётчик живёт
           const { error: updateError } = await supabase
             .from('posts')
-            .update({ views: currentViews + 1 })
+            .update({ views: current + 1 })
             .eq('id', postId)
 
           if (!updateError) {
-            setViews(currentViews + 1)
-            viewedPosts.push(postId)
-            sessionStorage.setItem('viewed_posts', JSON.stringify(viewedPosts))
+            if (!cancelled) setViews(current + 1)
+            markViewed(postId)
           }
         }
       } catch (error) {
-        console.error('Error tracking view:', error)
-      } finally {
-        setLoading(false)
+        console.error('Ошибка счётчика просмотров:', error)
+        if (!cancelled) setViews(0)
       }
     }
 
-    trackView()
+    run()
+    return () => {
+      cancelled = true
+    }
   }, [postId])
 
-  const formatViews = (count) => {
-    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M'
-    if (count >= 1000) return (count / 1000).toFixed(1) + 'K'
-    return count.toString()
-  }
-
-  if (loading) {
-    return (
-      <span className="flex items-center gap-1 text-gray-400 text-xs sm:text-sm">
-        {showIcon && (
-          <svg className="w-3 h-3 sm:w-4 sm:h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        )}
-        <span className="w-6 sm:w-8 h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></span>
-      </span>
-    )
+  if (views === null) {
+    return <span className="skeleton inline-block h-3 w-10 align-middle" aria-hidden="true" />
   }
 
   return (
-    <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs sm:text-sm whitespace-nowrap">
-      {showIcon && (
-        <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
-      )}
-      <span className="font-medium">{formatViews(views)}</span>
+    <span className="label numeric whitespace-nowrap">
+      {showIcon && '◉ '}
+      {formatViews(views)}
     </span>
   )
 }

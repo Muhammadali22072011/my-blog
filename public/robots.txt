@@ -1,18 +1,15 @@
 User-agent: *
 Allow: /
 
-# Sitemap
+# Служебные разделы.
+# Раньше стояло Disallow: /admin/ — со слэшем на конце, поэтому сам /admin
+# оставался открытым для индексации.
+Disallow: /admin
+Disallow: /media
+Disallow: /login
+Disallow: /register
+
+# Директив Allow: /src/, /components/, /pages/, /services/ здесь быть не должно:
+# это пути в исходниках, которых на собранном сайте не существует.
+
 Sitemap: https://muhammadali-blog.vercel.app/sitemap.xml
-
-# Crawl-delay
-Crawl-delay: 1
-
-# Allow all important directories
-Allow: /src/
-Allow: /components/
-Allow: /pages/
-Allow: /services/
-
-# Disallow admin areas
-Disallow: /admin/
-Disallow: /private/

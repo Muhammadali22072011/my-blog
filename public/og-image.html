@@ -1,67 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muhammadali Blog - Open Graph Image</title>
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OG-карточка</title>
+    <!--
+      Исходник социальной карточки 1200×630.
+      Из него рендерится /og-image.png (см. scripts/build-assets.mjs).
+      Правится здесь — не в PNG.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,300..700&family=Golos+Text:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            color: white;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-            max-width: 600px;
-        }
-        .logo {
-            font-size: 48px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        .tagline {
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-        .description {
-            font-size: 18px;
-            line-height: 1.6;
-            opacity: 0.8;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .highlight {
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 10px 5px;
-            font-weight: 500;
-        }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        width: 1200px;
+        height: 630px;
+        background: #f5efe4;
+        color: #14110e;
+        font-family: 'Literata', Georgia, serif;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Изразцовая полоса сверху — та же деталь, что в шапке сайта */
+      .band {
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 14px;
+        background: #0f6e76;
+      }
+
+      /*
+        Поток сверху вниз с фиксированными отступами.
+        Раньше здесь было justify-content: space-between — положение нижнего
+        блока зависело от высоты контейнера и «уезжало» при рендере.
+      */
+      .sheet {
+        position: absolute;
+        inset: 14px 0 0 0;
+        padding: 58px 76px 0;
+      }
+
+      .label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 15px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #6f6252;
+      }
+
+      h1 {
+        margin-top: 18px;
+        font-variation-settings: 'opsz' 72;
+        font-weight: 600;
+        font-size: 100px;
+        line-height: 0.92;
+        letter-spacing: -0.045em;
+      }
+
+      h1 .accent { color: #0f6e76; display: block; padding-left: 7%; }
+
+      .foot {
+        margin-top: 140px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        border-top: 1px solid rgba(20, 17, 14, 0.2);
+        padding-top: 26px;
+      }
+
+      .tagline {
+        font-family: 'Golos Text', system-ui, sans-serif;
+        font-size: 24px;
+        color: #4e453a;
+        line-height: 1.3;
+      }
+
+      /* Звезда-знак в правом нижнем углу */
+      .mark { flex-shrink: 0; }
+
+      /* Крупный водяной знак того же мотива */
+      .watermark {
+        position: absolute;
+        right: -190px;
+        top: 40px;
+        opacity: 0.08;
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">Muhammadali Blog</div>
-        <div class="tagline">Professional Tech Insights & Blog Platform</div>
-        <div class="description">
-            Expert articles, tutorials, and insights on technology, programming, and web development.
-            <br><br>
-            <span class="highlight">JavaScript</span>
-            <span class="highlight">React</span>
-            <span class="highlight">Web Dev</span>
-            <span class="highlight">Tech News</span>
-        </div>
+  </head>
+  <body>
+    <div class="band"></div>
+
+    <svg class="watermark" width="620" height="620" viewBox="0 0 64 64">
+      <g fill="#0f6e76">
+        <rect x="13" y="13" width="38" height="38" />
+        <path d="M32 5 59 32 32 59 5 32Z" />
+      </g>
+    </svg>
+
+    <div class="sheet">
+      <div>
+        <p class="label">Журнал · разработка, ИИ, ремесло</p>
+        <h1>
+          Muhammadali
+          <span class="accent">Izzatullaev</span>
+        </h1>
+      </div>
+
+      <div class="foot">
+        <p class="tagline">Длинные тексты, разборы и заметки на полях.</p>
+        <svg class="mark" width="92" height="92" viewBox="0 0 64 64">
+          <rect width="64" height="64" fill="#0f6e76" />
+          <g fill="#f5efe4">
+            <rect x="13" y="13" width="38" height="38" />
+            <path d="M32 5 59 32 32 59 5 32Z" />
+          </g>
+          <rect x="26" y="26" width="12" height="12" fill="#0f6e76" />
+          <rect x="29.5" y="29.5" width="5" height="5" fill="#d4a017" />
+        </svg>
+      </div>
     </div>
-</body>
+  </body>
 </html>

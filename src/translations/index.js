@@ -88,10 +88,6 @@ export const translations = {
     markdownEditor: 'Markdown Editor',
     markdownPlaceholder: 'Write your post in Markdown format...',
     logout: 'Logout',
-    noTitle: 'No Title',
-    noDescription: 'No Description',
-    postCreatedSuccessfully: 'Post created successfully!',
-    pleaseFillContent: 'Please fill in the post content',
     
     // Post page
     backToBlogs: 'Back to Blogs',
@@ -104,11 +100,9 @@ export const translations = {
     
     // Markdown buttons
     bold: 'B',
-    italic: 'I',
     heading1: 'H1',
     heading2: 'H2',
     list: '•',
-    boldText: 'Bold text',
     code: 'Code',
     listItem: 'List item',
     numberedListItem: 'Numbered list item',
@@ -130,7 +124,6 @@ export const translations = {
     insert: 'Insert',
     
     // Enhanced editor features
-    insertImage: 'Insert Image',
     insertVideo: 'Insert Video',
     linkText: 'Link Text',
     linkUrl: 'Link URL',
@@ -230,10 +223,6 @@ export const translations = {
     
     // AdminMCEditor specific translations
     insertTitleAndDescription: 'Insert title and description',
-    template: 'Template',
-    header1: 'Header 1',
-    header2: 'Header 2', 
-    header3: 'Header 3',
     modeToggle: 'Mode toggle',
     numberOfRows: 'Number of rows',
     numberOfColumns: 'Number of columns',
@@ -340,7 +329,6 @@ export const translations = {
     stylingAndDesign: 'Styling and design',
     quickStart: 'Quick start',
     editingMode: 'Editing mode',
-    previewMode: 'Preview mode',
     toolbarButtons: 'Toolbar buttons',
     markdownSyntax: 'Markdown syntax',
     boldText: 'Bold text',
@@ -484,10 +472,6 @@ export const translations = {
     markdownEditor: 'Markdown редактор',
     markdownPlaceholder: 'Напишите ваш пост в формате Markdown...',
     logout: 'Выйти',
-    noTitle: 'Без заголовка',
-    noDescription: 'Без описания',
-    postCreatedSuccessfully: 'Пост успешно создан!',
-    pleaseFillContent: 'Пожалуйста, заполните содержимое поста',
     
     // Post page
     backToBlogs: 'Назад к блогам',
@@ -500,11 +484,9 @@ export const translations = {
     
     // Markdown buttons
     bold: 'Ж',
-    italic: 'К',
     heading1: 'З1',
     heading2: 'З2',
     list: '•',
-    boldText: 'Жирный текст',
     code: 'Код',
     listItem: 'Элемент списка',
     numberedListItem: 'Нумерованный элемент списка',
@@ -526,7 +508,6 @@ export const translations = {
     insert: 'Вставить',
     
     // Enhanced editor features
-    insertImage: 'Вставить изображение',
     insertVideo: 'Вставить видео',
     linkText: 'Текст ссылки',
     linkUrl: 'URL ссылки',
@@ -626,10 +607,6 @@ export const translations = {
     
     // AdminMCEditor specific translations
     insertTitleAndDescription: 'Вставить заголовок и описание',
-    template: 'Шаблон',
-    header1: 'Заголовок 1',
-    header2: 'Заголовок 2', 
-    header3: 'Заголовок 3',
     modeToggle: 'Переключение режима',
     numberOfRows: 'Количество строк',
     numberOfColumns: 'Количество столбцов',
@@ -736,7 +713,6 @@ export const translations = {
     stylingAndDesign: 'Стилизация и дизайн',
     quickStart: 'Быстрый старт',
     editingMode: 'Режим редактирования',
-    previewMode: 'Режим предпросмотра',
     toolbarButtons: 'Кнопки панели инструментов',
     markdownSyntax: 'Markdown синтаксис',
     boldText: 'Жирный текст',

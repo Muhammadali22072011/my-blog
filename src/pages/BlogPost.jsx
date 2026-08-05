@@ -1,7 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useData } from '../context/DataContext'
-import { translations } from '../translations'
-import { useState, useEffect } from 'react'
 import { supabase } from '../config/supabase'
 import { renderMarkdown } from '../utils/markdownRenderer.jsx'
 import TableOfContents from '../components/TableOfContents'
@@ -18,576 +17,326 @@ import PostRating from '../components/PostRating'
 import SocialShare from '../components/SocialShare'
 import PostStats from '../components/PostStats'
 import RelatedPostsWidget from '../components/RelatedPostsWidget'
+import {
+  getPostTitle,
+  getExcerpt,
+  getReadingTime,
+  getPostCover,
+  stripLeadingTitle,
+  formatDateRu,
+} from '../utils/postFormat'
 
+/**
+ * Полоса материала: широкое поле для чтения, узкая колонка полей справа.
+ * Ширина текста ограничена мерой строки (~66 знаков) — это читаемость,
+ * а не декоративное ограничение.
+ */
 function BlogPost() {
   const { id } = useParams()
-  const { posts, loading, error } = useData()
-  const t = translations.en
+  const { posts } = useData()
+
   const [post, setPost] = useState(null)
-  const [postLoading, setPostLoading] = useState(false)
+  const [postLoading, setPostLoading] = useState(true)
   const [postError, setPostError] = useState(null)
   const [readingProgress, setReadingProgress] = useState(0)
   const [showBackToTop, setShowBackToTop] = useState(false)
-  const [copied, setCopied] = useState(false)
 
-  // Reading progress bar
+  // Прогресс чтения. Слушатель пассивный и сглажен через rAF —
+  // раньше setState вызывался на каждое событие прокрутки.
   useEffect(() => {
+    let frame = null
+
     const handleScroll = () => {
-      const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
-      setReadingProgress(Math.min(progress, 100))
-      setShowBackToTop(scrollTop > 400)
+      if (frame !== null) return
+      frame = requestAnimationFrame(() => {
+        frame = null
+        const scrollTop = window.scrollY
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight
+        setReadingProgress(docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0)
+        setShowBackToTop(scrollTop > 600)
+      })
     }
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (frame !== null) cancelAnimationFrame(frame)
+    }
   }, [])
 
   useEffect(() => {
-    const loadPost = async () => {
-      if (!id || isNaN(parseInt(id))) {
-        setPostError('Invalid post ID')
-        return
-      }
+    // Строгая проверка: parseInt('12abc') раньше молча открывал пост №12
+    const parsedId = /^\d+$/.test(String(id ?? '')) ? Number(id) : null
 
-      const parsedId = parseInt(id)
+    if (parsedId === null) {
+      setPost(null)
+      setPostError('Неверный адрес материала')
+      setPostLoading(false)
+      return
+    }
 
-      // Всегда загружаем пост напрямую из базы данных для гарантии актуальности
-      setPostLoading(true)
-      setPostError(null)
+    let cancelled = false
+    setPost(null)
+    setPostError(null)
+    setPostLoading(true)
+    window.scrollTo({ top: 0, behavior: 'auto' })
 
+    ;(async () => {
       try {
         const { data, error } = await supabase
           .from('posts')
           .select('*')
           .eq('id', parsedId)
-          .single()
+          .maybeSingle()
 
-        if (error) {
-          setPostError(error.message)
-        } else if (data) {
-          if (data.status !== 'published') {
-            setPostError(`Post is not published`)
-          } else {
-            setPost(data)
-          }
-        } else {
-          setPostError('Post not found')
-        }
-      } catch (error) {
-        setPostError(error.message)
+        if (cancelled) return
+
+        if (error) setPostError(error.message)
+        else if (!data) setPostError('Материал не найден')
+        else if (data.status !== 'published') setPostError('Материал не опубликован')
+        else setPost(data)
+      } catch (err) {
+        if (!cancelled) setPostError(err.message)
       } finally {
-        setPostLoading(false)
+        if (!cancelled) setPostLoading(false)
       }
-    }
+    })()
 
-    if (id && !isNaN(parseInt(id))) {
-      setPost(null)
-      setPostError(null)
-      loadPost()
+    return () => {
+      cancelled = true
     }
   }, [id])
 
-  if (loading || postLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Main Content Skeleton */}
-          <div className="flex-1 max-w-4xl">
-            {/* Back button skeleton */}
-            <div className="mb-8 pt-12">
-              <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            </div>
+  const postTitle = useMemo(() => (post ? getPostTitle(post) : ''), [post])
+  const cleanContent = useMemo(() => stripLeadingTitle(post?.content), [post])
+  const cover = useMemo(() => (post ? getPostCover(post) : null), [post])
+  const description = useMemo(() => getExcerpt(post?.content), [post])
+  const keywords = useMemo(() => (post ? extractKeywords(post.content, 15) : []), [post])
 
-            {/* Title skeleton */}
-            <div className="mb-6">
-              <div className="h-10 w-3/4 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse mb-4"></div>
-              <div className="flex gap-4">
-                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              </div>
-            </div>
+  // Стабильная ссылка: раньше новый массив на каждый рендер заставлял
+  // эффект в SEOHead перезаписывать мета-теги бесконечно.
+  const seoTags = useMemo(
+    () => (post?.tags?.length ? post.tags : [post?.category].filter(Boolean)),
+    [post]
+  )
 
-            {/* Featured image skeleton */}
-            <div className="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse mb-8"></div>
-
-            {/* Content skeleton */}
-            <div className="space-y-3">
-              <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 w-5/6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              <div className="h-4 w-4/5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            </div>
-          </div>
-
-          {/* Sidebar Skeleton */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
-            <div className="sticky top-24 space-y-6">
-              {/* TOC skeleton */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3"></div>
-                <div className="space-y-2">
-                  <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-3 w-5/6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-3 w-4/5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                </div>
-              </div>
-
-              {/* Related posts skeleton */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3"></div>
-                <div className="space-y-3">
-                  <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error || postError) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error Loading Post</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error || postError}</p>
-          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!post && !loading && !postLoading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Post Not Found</h2>
-          <Link to="/blogs" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Back to Blogs
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No Date'
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return 'Invalid Date'
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  }
-
-  const getPostTitle = () => {
-    if (post.content) {
-      const lines = post.content.split('\n')
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('# ')) {
-          return trimmed.substring(2)
-        }
-      }
-    }
-    return post.excerpt || 'Untitled Post'
-  }
-
-  const deduplicateContent = (content) => {
-    if (!content) return content
-    const lines = content.split('\n')
-    const filteredLines = []
-    let foundMainTitle = false
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      const trimmed = line.trim()
-      if (trimmed.startsWith('# ') && !foundMainTitle) {
-        foundMainTitle = true
-        continue
-      }
-      filteredLines.push(line)
-    }
-    return filteredLines.join('\n')
-  }
-
-  const cleanContent = post.content ? deduplicateContent(post.content) : ''
-
-  const getReadingTime = (content) => {
-    if (!content) return 1
-    const words = content.trim().split(/\s+/).length
-    const time = Math.ceil(words / 200)
-    return time < 1 ? 1 : time
-  }
-
-  const getExcerpt = (content, maxLength = 160) => {
-    if (!content) return 'Read this blog post on Muhammadali Blog'
-    const plainText = content
-      // Удаляем HTML теги (включая <span>, <strong>, <em> и т.д.)
-      .replace(/<[^>]*>/g, '')
-      .replace(/^#+ .*/gm, '')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/`(.*?)`/g, '$1')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/>\s.*/g, '')
-      .replace(/- .*/g, '')
-      .replace(/\n+/g, ' ')
-      // Удаляем множественные пробелы
-      .replace(/\s+/g, ' ')
-      .trim()
-
-    // Если после удаления заголовков ничего не осталось, используем заголовок
-    if (!plainText || plainText.length < 10) {
-      const lines = content.split('\n')
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('# ')) {
-          return trimmed.substring(2) + ' - Read more on Muhammadali Blog'
-        }
-      }
-      return 'Read this blog post on Muhammadali Blog'
-    }
-
-    return plainText.length <= maxLength ? plainText : plainText.substring(0, maxLength).trim() + '...'
-  }
-
-  const getRelatedPosts = () => {
-    if (!post || !posts) return []
-    return posts
-      .filter(p => p.id !== post.id && p.status === 'published' && p.category === post.category)
-      .slice(0, 3)
-  }
-
-  const relatedPosts = getRelatedPosts()
-
-  const getAdjacentPosts = () => {
-    if (!post || !posts) return { prev: null, next: null }
-    const publishedPosts = posts
-      .filter(p => p.status === 'published')
+  const { prev: prevPost, next: nextPost } = useMemo(() => {
+    if (!post || !posts?.length) return { prev: null, next: null }
+    const published = [...posts]
+      .filter((p) => p.status === 'published')
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    const currentIndex = publishedPosts.findIndex(p => p.id === post.id)
+    const i = published.findIndex((p) => p.id === post.id)
+    if (i === -1) return { prev: null, next: null }
     return {
-      prev: currentIndex < publishedPosts.length - 1 ? publishedPosts[currentIndex + 1] : null,
-      next: currentIndex > 0 ? publishedPosts[currentIndex - 1] : null
+      prev: i < published.length - 1 ? published[i + 1] : null,
+      next: i > 0 ? published[i - 1] : null,
     }
+  }, [post, posts])
+
+  const scrollTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  if (postLoading) {
+    return (
+      <div className="mx-auto max-w-6xl px-5 pt-20 sm:px-8">
+        <div className="skeleton h-3 w-24" />
+        <div className="skeleton mt-8 h-16 w-4/5" />
+        <div className="skeleton mt-4 h-16 w-3/5" />
+        <div className="skeleton mt-10 h-64 w-full" />
+        <div className="mt-10 max-w-measure space-y-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="skeleton h-4" style={{ width: `${95 - i * 6}%` }} />
+          ))}
+        </div>
+      </div>
+    )
   }
 
-  const { prev: prevPost, next: nextPost } = getAdjacentPosts()
-
-  const getAdjacentPostTitle = (adjacentPost) => {
-    if (!adjacentPost) return ''
-    if (adjacentPost.content) {
-      const lines = adjacentPost.content.split('\n')
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('# ')) {
-          const title = trimmed.substring(2)
-          return title.length > 50 ? title.substring(0, 50) + '...' : title
-        }
-      }
-    }
-    return adjacentPost.excerpt || 'Untitled Post'
+  if (postError || !post) {
+    return (
+      <div className="mx-auto max-w-2xl px-5 py-32 text-center sm:px-8">
+        <p className="label text-terra">Ошибка</p>
+        <h1 className="display mt-4 text-4xl">{postError || 'Материал не найден'}</h1>
+        <Link to="/blogs" className="btn-primary mt-8">
+          Вернуться к указателю
+        </Link>
+      </div>
+    )
   }
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const getRelatedPostTitle = (relatedPost) => {
-    if (relatedPost.content) {
-      const lines = relatedPost.content.split('\n')
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('# ')) return trimmed.substring(2)
-      }
-    }
-    return relatedPost.excerpt || 'Untitled Post'
-  }
-
-  const postTitle = getPostTitle()
-  const keywords = extractKeywords(post.content, 15)
-
-  // Извлекаем первое изображение из контента для OG image
-  const getFirstImage = (content) => {
-    if (!content) return null
-
-    // Ищем HTML изображение
-    const htmlImgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/i)
-    if (htmlImgMatch) {
-      const src = htmlImgMatch[1]
-      // Если URL относительный, добавляем базовый URL
-      if (!src.startsWith('http')) {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-        // Убираем лишние слэши
-        const cleanSrc = src.replace(/^\/+/, '')
-        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${cleanSrc}`
-      }
-      return src
-    }
-
-    // Ищем markdown изображение
-    const mdImgMatch = content.match(/!\[([^\]]*)\]\(([^)]+)\)/)
-    if (mdImgMatch) {
-      const src = mdImgMatch[2]
-      if (!src.startsWith('http')) {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-        const cleanSrc = src.replace(/^\/+/, '')
-        return `${supabaseUrl}/storage/v1/object/public/images/blog-images/${cleanSrc}`
-      }
-      return src
-    }
-
-    return null
-  }
-
-  // Преобразуем featured_image в полный URL если нужно
-  const getFullImageUrl = (imageUrl) => {
-    if (!imageUrl) return null
-    if (imageUrl.startsWith('http')) return imageUrl
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rfppkhwqnlkpjemmoexg.supabase.co'
-
-    // Если путь уже содержит storage/v1/object/public, не дублируем
-    if (imageUrl.includes('storage/v1/object/public')) {
-      return `${supabaseUrl}/${imageUrl.replace(/^\/+/, '')}`
-    }
-
-    // Если путь начинается с images/, это bucket путь
-    if (imageUrl.startsWith('images/')) {
-      return `${supabaseUrl}/storage/v1/object/public/${imageUrl}`
-    }
-
-    // Иначе предполагаем что это полный путь от storage
-    return `${supabaseUrl}/storage/v1/object/public/${imageUrl.replace(/^\/+/, '')}`
-  }
-
-  // Приоритет: featured_image > og_image > первое изображение из контента
-  const ogImage = getFullImageUrl(post.featured_image) || getFullImageUrl(post.og_image) || getFirstImage(post.content)
-
-  // Логируем для отладки
-  console.log('🖼️ Post OG Image:', {
-    featured_image: post.featured_image,
-    og_image: post.og_image,
-    final: ogImage
-  })
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      {/* SEO */}
+    <div>
       <SEOHead
         title={postTitle}
-        description={getExcerpt(post.content)}
-        image={ogImage}
+        description={description}
+        image={cover}
         url={window.location.href}
         type="article"
         publishedTime={post.created_at}
         modifiedTime={post.updated_at}
-        tags={post.tags || [post.category].filter(Boolean)}
+        tags={seoTags}
       />
 
-      {/* SEO Keywords & Structured Data */}
       <SEOKeywords
         keywords={keywords}
         post={{
           title: postTitle,
-          description: getExcerpt(post.content),
+          description,
           content: post.content,
-          image: ogImage,
+          image: cover,
           publishedTime: post.created_at,
           modifiedTime: post.updated_at,
           category: post.category,
-          author: 'Muhammadali'
+          author: 'Muhammadali Izzatullaev',
         }}
         type="article"
       />
 
-      {/* Quote Share */}
       <QuoteShare />
 
-      {/* Reading Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 z-50">
-        <div
-          className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-150"
-          style={{ width: `${readingProgress}%` }}
-        />
-      </div>
+      {/* Полоса прогресса чтения — в цвете изразца */}
+      <div
+        className="fixed left-0 top-0 z-50 h-[3px] bg-tile transition-[width] duration-150"
+        style={{ width: `${readingProgress}%` }}
+        role="progressbar"
+        aria-label="Прогресс чтения"
+        aria-valuenow={Math.round(readingProgress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      />
 
-      <div className="flex gap-8">
-        {/* Main Content */}
-        <div className="flex-1 max-w-4xl">
-          {/* Back navigation */}
-          <div className="mb-6 sm:mb-8 pt-8 sm:pt-12 flex items-center justify-between gap-2">
-            <Link
-              to="/blogs"
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium transition-colors inline-flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
-            >
-              <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="hidden xs:inline">{t.backToBlogs || 'Back to Blogs'}</span>
-              <span className="xs:hidden">Back</span>
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        {/* ── Титул материала ───────────────────────────────────── */}
+        <header className="pb-12 pt-14 sm:pt-20">
+          <div className="mb-10 flex items-center justify-between gap-4">
+            <Link to="/blogs" className="label link-wipe hover:text-tile">
+              ← Указатель
             </Link>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-3">
               <ExportPost post={post} title={postTitle} />
               <BookmarkButton postId={post.id} postTitle={postTitle} />
             </div>
           </div>
 
-          {/* Post header */}
-          <header className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white leading-tight mb-4">{postTitle}</h1>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="label">{formatDateRu(post.created_at)}</span>
+            <span className="label">{getReadingTime(post.content)} мин чтения</span>
+            <ViewCounter postId={post.id} />
+            {post.category && <span className="label label-tile">{post.category}</span>}
+          </div>
 
-            {/* Featured Image */}
-            {ogImage && (
-              <div className="w-full rounded-xl overflow-hidden mb-6">
+          <h1 className="display mt-6 max-w-4xl text-[clamp(2.25rem,6.5vw,4.5rem)]">
+            {postTitle}
+          </h1>
+
+          {cover && (
+            <figure className="mt-12">
+              <div className="relative">
+                <div
+                  className="absolute inset-0 translate-x-3 translate-y-3 bg-tile"
+                  aria-hidden="true"
+                />
                 <img
-                  src={ogImage}
+                  src={cover}
                   alt={postTitle}
-                  className="w-full h-auto object-cover"
-                  style={{ maxHeight: '500px' }}
-                  onError={(e) => e.target.style.display = 'none'}
+                  className="relative max-h-[560px] w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.parentElement.style.display = 'none'
+                  }}
                 />
               </div>
-            )}
+            </figure>
+          )}
+        </header>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400 text-sm">
-              <span>{formatDate(post.created_at)}</span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {getReadingTime(post.content)} min read
-              </span>
-              <span>•</span>
-              <ViewCounter postId={post.id} />
-              {post.category && (
-                <>
-                  <span>•</span>
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs capitalize">{post.category}</span>
-                </>
-              )}
+        <div className="grid grid-cols-1 gap-14 lg:grid-cols-12">
+          {/* ── Текст ───────────────────────────────────────────── */}
+          <div className="lg:col-span-8">
+            <article className="article-body">
+              {cleanContent
+                ? renderMarkdown(cleanContent, { emptyText: 'Материал пока пуст' })
+                : null}
+            </article>
+
+            <div className="ornament my-14">
+              <span className="label label-tile">◆</span>
             </div>
-          </header>
 
-          {/* Table of Contents - убрано отсюда, перенесено в сайдбар */}
-
-          {/* Post content */}
-          <article className="prose prose-lg dark:prose-invert max-w-none">
-            <div className="text-gray-800 dark:text-gray-200 leading-relaxed bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-              {cleanContent && renderMarkdown(cleanContent, { emptyText: 'No content available' })}
-            </div>
-          </article>
-
-          {/* Post Stats */}
-          <div className="mt-8">
             <PostStats postId={post.id} />
-          </div>
 
-          {/* Reactions */}
-          <div className="mt-8 py-6 sm:py-8 border-t border-b border-gray-200 dark:border-gray-700">
-            <Reactions postId={post.id} />
-          </div>
+            <div className="rule-t rule-b my-10 py-8">
+              <Reactions postId={post.id} />
+            </div>
 
-          {/* Post Rating */}
-          <div className="mt-8">
             <PostRating postId={post.id} />
-          </div>
 
-          {/* Social Share */}
-          <div className="mt-8">
-            <SocialShare
-              url={window.location.href}
-              title={postTitle}
-              description={getExcerpt(post.content)}
-            />
-          </div>
+            <div className="mt-10">
+              <SocialShare url={window.location.href} title={postTitle} description={description} />
+            </div>
 
-          {/* Post footer */}
-          <footer className="mt-8">
-            {/* Post Navigation */}
+            {/* ── Соседние материалы ────────────────────────────── */}
             {(prevPost || nextPost) && (
-              <div className="mb-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {prevPost ? (
-                    <Link
-                      to={`/post/${prevPost.id}`}
-                      className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700"
-                    >
-                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Previous Post
-                      </div>
-                      <h4 className="font-semibold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {getAdjacentPostTitle(prevPost)}
-                      </h4>
-                    </Link>
-                  ) : <div></div>}
+              <nav className="rule-t mt-16 grid grid-cols-1 gap-px pt-10 sm:grid-cols-2" aria-label="Соседние материалы">
+                {prevPost ? (
+                  <Link to={`/post/${prevPost.id}`} className="group py-5 pr-6">
+                    <span className="label transition-colors group-hover:text-tile">
+                      ← Предыдущий
+                    </span>
+                    <p className="display mt-2 text-xl leading-tight transition-colors group-hover:text-tile">
+                      {getPostTitle(prevPost, 60)}
+                    </p>
+                  </Link>
+                ) : (
+                  <span />
+                )}
 
-                  {nextPost ? (
-                    <Link
-                      to={`/post/${nextPost.id}`}
-                      className="group p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 text-right"
-                    >
-                      <div className="flex items-center justify-end gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Next Post
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                      <h4 className="font-semibold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {getAdjacentPostTitle(nextPost)}
-                      </h4>
-                    </Link>
-                  ) : <div></div>}
-                </div>
-              </div>
+                {nextPost && (
+                  <Link
+                    to={`/post/${nextPost.id}`}
+                    className="group rule-l py-5 pl-6 text-right sm:text-right"
+                  >
+                    <span className="label transition-colors group-hover:text-tile">
+                      Следующий →
+                    </span>
+                    <p className="display mt-2 text-xl leading-tight transition-colors group-hover:text-tile">
+                      {getPostTitle(nextPost, 60)}
+                    </p>
+                  </Link>
+                )}
+              </nav>
             )}
 
-            {/* Comments */}
-            <Comments postId={post.id} />
-          </footer>
-        </div>
-
-        {/* Sidebar */}
-        <div className="hidden lg:block w-80 flex-shrink-0">
-          <div className="sticky top-24 space-y-6">
-            {/* Table of Contents */}
-            <TableOfContents content={post.content} />
-
-            {/* Related Posts Widget */}
-            <RelatedPostsWidget
-              currentPostId={post.id}
-              category={post.category}
-              tags={post.tags || []}
-            />
+            <div className="mt-16">
+              <Comments postId={post.id} />
+            </div>
           </div>
+
+          {/* ── Поля страницы ───────────────────────────────────── */}
+          <aside className="lg:col-span-4">
+            <div className="sticky top-28 space-y-10">
+              <TableOfContents content={post.content} />
+              <RelatedPostsWidget
+                currentPostId={post.id}
+                category={post.category}
+                tags={post.tags || []}
+              />
+            </div>
+          </aside>
         </div>
       </div>
 
-      {/* Back to top button */}
-      <div className={`fixed bottom-8 right-8 transition-all duration-300 z-40 ${showBackToTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all hover:scale-110"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
-      </div>
+      {/* Возврат наверх */}
+      <button
+        onClick={scrollTop}
+        aria-label="Наверх"
+        className={`label fixed bottom-8 right-8 z-40 border border-ink/25 bg-paper px-3 py-2 transition-all duration-300 hover:border-tile hover:text-tile ${
+          showBackToTop ? 'opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
+        }`}
+      >
+        ↑ Наверх
+      </button>
     </div>
   )
 }

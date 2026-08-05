@@ -1,145 +1,149 @@
-// Service Worker для PWA
-const CACHE_NAME = 'muhammadali-blog-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
-];
+/*
+ * Service Worker.
+ *
+ * Что было сломано:
+ *  1. cache.addAll() получал список с /icon-192x192.png и /icon-512x512.png,
+ *     которых в public/ не существовало. addAll атомарен: один 404 отклоняет
+ *     весь промис, установка падает — и Service Worker не активировался
+ *     НИКОГДА. PWA не работал целиком.
+ *  2. В notificationclick вызывался `clients` без self — ReferenceError.
+ *  3. Стратегия «сначала сеть» применялась и к статике с хешем в имени,
+ *     хотя такие файлы неизменяемы и их достаточно взять из кэша.
+ */
 
-// Установка Service Worker
+const VERSION = 'v2';
+const SHELL_CACHE = `shell-${VERSION}`;
+const RUNTIME_CACHE = `runtime-${VERSION}`;
+
+// Только то, что точно существует. Остальное осядет в кэше по ходу работы.
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/logo.svg'];
+
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[SW] Caching app shell');
-        return cache.addAll(urlsToCache);
-      })
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) =>
+        // Каждый ресурс кладётся отдельно: отсутствие одного файла
+        // больше не отменяет установку целиком
+        Promise.all(
+          SHELL_ASSETS.map((url) =>
+            cache.add(url).catch(() => {
+              /* ресурса нет — пропускаем */
+            })
+          )
+        )
+      )
       .then(() => self.skipWaiting())
   );
 });
 
-// Активация Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name !== SHELL_CACHE && name !== RUNTIME_CACHE)
+            .map((name) => caches.delete(name))
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch - стратегия Network First, затем Cache
 self.addEventListener('fetch', (event) => {
-  // Пропускаем не-GET запросы
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
 
-  // Пропускаем chrome-extension и другие схемы
-  if (!event.request.url.startsWith('http')) return;
+  if (request.method !== 'GET') return;
+  if (!request.url.startsWith('http')) return;
 
+  const url = new URL(request.url);
+
+  // Чужие домены (Supabase, шрифты) обслуживает браузер
+  if (url.origin !== self.location.origin) return;
+
+  // Собранная статика содержит хеш в имени — она неизменяема,
+  // отдаём из кэша сразу и не ходим в сеть
+  const isImmutable = url.pathname.startsWith('/assets/');
+
+  if (isImmutable) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+      )
+    );
+    return;
+  }
+
+  // Остальное — сначала сеть, при отсутствии связи из кэша
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        // Проверяем что ответ валидный
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+        if (response && response.status === 200 && response.type === 'basic') {
+          const copy = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
         }
-
-        // Клонируем ответ
-        const responseToCache = response.clone();
-
-        // Кэшируем только GET запросы к нашему домену
-        if (event.request.url.includes(self.location.origin)) {
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-        }
-
         return response;
       })
-      .catch(() => {
-        // Если сеть недоступна, пытаемся взять из кэша
-        return caches.match(event.request)
-          .then((response) => {
-            if (response) {
-              return response;
-            }
-            // Если в кэше нет, показываем офлайн страницу
-            if (event.request.mode === 'navigate') {
-              return caches.match('/index.html');
-            }
-          });
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        if (request.mode === 'navigate') {
+          const shell = await caches.match('/index.html');
+          if (shell) return shell;
+        }
+        return new Response('Нет соединения', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
       })
   );
 });
 
-// Push уведомления
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
-  
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Новый пост!';
-  const options = {
-    body: data.body || 'Появился новый пост в блоге',
-    icon: '/icon-192x192.png',
-    badge: '/icon-96x96.png',
-    vibrate: [200, 100, 200],
-    data: {
-      url: data.url || '/'
-    },
-    actions: [
-      {
-        action: 'open',
-        title: 'Открыть'
-      },
-      {
-        action: 'close',
-        title: 'Закрыть'
-      }
-    ]
-  };
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(data.title || 'Новый материал', {
+      body: data.body || 'В журнале появился новый материал',
+      icon: '/logo.svg',
+      badge: '/logo.svg',
+      data: { url: data.url || '/' },
+      actions: [
+        { action: 'open', title: 'Открыть' },
+        { action: 'close', title: 'Закрыть' },
+      ],
+    })
   );
 });
 
-// Клик по уведомлению
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event);
   event.notification.close();
+  if (event.action === 'close') return;
 
-  if (event.action === 'open' || !event.action) {
-    const url = event.notification.data.url || '/';
-    event.waitUntil(
-      clients.openWindow(url)
-    );
-  }
+  const target = event.notification.data?.url || '/';
+
+  // Именно self.clients: голый `clients` — ReferenceError в модульном воркере
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      for (const client of windows) {
+        if (client.url.includes(target) && 'focus' in client) return client.focus();
+      }
+      return self.clients.openWindow(target);
+    })
+  );
 });
-
-// Sync для офлайн действий
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-posts') {
-    event.waitUntil(syncPosts());
-  }
-});
-
-async function syncPosts() {
-  // Синхронизация постов когда появится интернет
-  console.log('[SW] Syncing posts...');
-  // Здесь можно добавить логику синхронизации
-}
-
-console.log('[SW] Service Worker loaded');
