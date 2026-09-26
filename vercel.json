@@ -34,6 +34,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/.well-known/:path*",
+      "destination": "/api/well-known"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
