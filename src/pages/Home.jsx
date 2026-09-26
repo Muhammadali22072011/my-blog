@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { useData } from '../context/DataContext'
 import { ProfileSkeleton } from '../components/Skeleton'
 import SEOHead from '../components/SEOHead'
+import LatestVideos from '../components/videos/LatestVideos'
 import { getPostTitle, getReadingTime, formatDateRu, telegramHandle } from '../utils/postFormat'
 
 /**
@@ -176,6 +177,9 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Последние видео — сами решают, показываться ли ─────────── */}
+      <LatestVideos />
 
       {/* ── Указатель последних материалов ────────────────────────── */}
       {latest.length > 0 && (

@@ -16,15 +16,17 @@
 //   SUPABASE_URL               — уже задан для api/og.js
 //   SITE_URL                   — необязательно, по умолчанию https://izzatullaev.uz
 
-import { createClient } from '@supabase/supabase-js'
 import { timingSafeEqual } from 'node:crypto'
 import { TOOLS } from './_mcp/tools.js'
+import { getDb } from './_lib/supabase.js'
 
 const SUPPORTED_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']
 const SERVER_INFO = { name: 'muhammadali-blog', title: 'Muhammadali Blog', version: '1.0.0' }
 const INSTRUCTIONS = [
   'Управление блогом Muhammadali Izzatullaev: посты, комментарии, профиль, страница «Обо мне»,',
-  'настройки сайта, проекты, медиафайлы, подписчики и статистика.',
+  'настройки сайта, проекты, раздел «Видео», медиафайлы, подписчики и статистика.',
+  'Видео: create_video → файл (request_video_upload + PUT + complete_video_upload, либо',
+  'import_video_from_url) → set_video_status. Новые видео — черновики.',
   'Начинайте с site_overview. Новые посты по умолчанию создаются черновиками —',
   'публикуйте только когда владелец просит. Текст постов — Markdown.',
   'Изменения видны на сайте сразу, пересборка не нужна.',
@@ -43,17 +45,6 @@ const readToken = (req) => {
   if (header.toLowerCase().startsWith('bearer ')) return header.slice(7).trim()
   const url = new URL(req.url, 'http://localhost')
   return url.searchParams.get('key') || ''
-}
-
-let client
-const getDb = () => {
-  if (!client) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !key) throw new Error('На сервере не заданы SUPABASE_URL и SUPABASE_SERVICE_ROLE_KEY')
-    client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  }
-  return client
 }
 
 const rpcError = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } })

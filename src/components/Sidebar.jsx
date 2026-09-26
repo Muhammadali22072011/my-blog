@@ -9,7 +9,6 @@ function Sidebar() {
     { path: '/', label: 'Home' },
     { path: '/blogs', label: t.blogs },
     { path: '/news', label: t.news },
-    { path: '/register', label: t.register },
     { path: '/admin', label: t.admin }
   ]
 

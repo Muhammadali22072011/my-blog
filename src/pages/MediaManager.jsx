@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
 import ImageUploader from '../components/ImageUploader'
 import VideoUploader from '../components/VideoUploader'
 import ImageGallery from '../components/ImageGallery'
 import VideoGallery from '../components/VideoGallery'
+import AdminGate from '../components/admin/AdminGate'
 
 function MediaManager() {
-  const { isAdmin } = useAuth()
   const [activeTab, setActiveTab] = useState('images')
   const [selectedImage, setSelectedImage] = useState(null)
   const [selectedVideo, setSelectedVideo] = useState(null)
@@ -54,11 +53,11 @@ function MediaManager() {
     )
   }
 
-  const handleImageUploaded = (imageData) => {
+  const handleImageUploaded = () => {
     // You can add logic to refresh the gallery here
   }
 
-  const handleVideoUploaded = (videoData) => {
+  const handleVideoUploaded = () => {
     // You can add logic to refresh the gallery here
   }
 
@@ -70,7 +69,9 @@ function MediaManager() {
     setSelectedVideo(video)
   }
 
+  // Головоломка — ширма, а загрузка в хранилище требует сессии админа (RLS)
   return (
+    <AdminGate>
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Title */}
@@ -247,6 +248,7 @@ function MediaManager() {
         </div>
       </div>
     </div>
+    </AdminGate>
   )
 }
 

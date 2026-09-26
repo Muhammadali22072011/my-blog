@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../config/supabase'
+import { subscribeToNewsletter } from '../services/emailService'
 
 function NewsletterPopup() {
   const [show, setShow] = useState(false)
@@ -27,11 +27,7 @@ function NewsletterPopup() {
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .insert([{ email: email.trim() }])
-
-      if (error) throw error
+      await subscribeToNewsletter(email.trim().toLowerCase())
 
       setSuccess(true)
       localStorage.setItem('newsletter_subscribed', 'true')

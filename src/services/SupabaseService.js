@@ -335,6 +335,9 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('profile')
         .select('*')
+        // Строк может оказаться несколько: без сортировки база отдавала
+        // любую, и сайт читал не ту строку, в которую пишут админка и MCP
+        .order('id')
         .limit(1)
       
       if (error) throw error
@@ -383,6 +386,9 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('about_me')
         .select('*')
+        // Строк может оказаться несколько: без сортировки база отдавала
+        // любую, и сайт читал не ту строку, в которую пишут админка и MCP
+        .order('id')
         .limit(1)
       
       if (error) throw error
@@ -431,6 +437,9 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('site_settings')
         .select('*')
+        // Строк может оказаться несколько: без сортировки база отдавала
+        // любую, и сайт читал не ту строку, в которую пишут админка и MCP
+        .order('id')
         .limit(1)
       
       if (error) throw error

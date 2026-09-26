@@ -14,6 +14,7 @@ function Navbar() {
 
   const navItems = [
     { path: '/blogs', label: 'Журнал' },
+    { path: '/videos', label: 'Видео' },
     { path: '/feed', label: 'Лента' },
     { path: '/news', label: 'Новости' },
     { path: '/projects', label: 'Проекты' },
@@ -21,7 +22,9 @@ function Navbar() {
     { path: '/about', label: 'Об авторе' },
   ]
 
-  const isActive = (path) => location.pathname === path
+  // Раздел подсвечивается и на вложенных страницах: /videos/slug → «Видео»
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + '/')
 
   // Признак разблокированной админки. Это ТОЛЬКО подсказка для интерфейса:
   // реальный доступ к данным обязан ограничиваться политиками RLS в Supabase.

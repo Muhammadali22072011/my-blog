@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { supabase } from '../config/supabase'
-import { sendWelcomeEmail } from '../services/emailService'
+import { subscribeToNewsletter } from '../services/emailService'
 
 /**
  * Подписка на рассылку.
@@ -20,27 +19,12 @@ function Newsletter() {
     setStatus('loading')
 
     try {
-      const { data: existing } = await supabase
-        .from('newsletter_subscribers')
-        .select('id, subscribed_at')
-        .eq('email', value)
-        .maybeSingle()
+      const result = await subscribeToNewsletter(value)
 
-      if (existing?.subscribed_at) {
+      if (result === 'already') {
         setStatus('idle')
         toast.error('Этот адрес уже подписан')
         return
-      }
-
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .upsert([{ email: value }], { onConflict: 'email' })
-
-      if (error) throw error
-
-      const mail = await sendWelcomeEmail(value)
-      if (!mail.success) {
-        console.warn('Письмо не ушло, но подписка сохранена:', mail.error)
       }
 
       setStatus('success')

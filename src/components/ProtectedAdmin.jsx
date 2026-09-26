@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import Admin from '../pages/Admin'
 import MultiStepAuth from './MultiStepAuth'
+import AdminGate from './admin/AdminGate'
 
+// Два шага: головоломка прячет форму входа от случайных посетителей,
+// а настоящий доступ даёт только сессия Supabase с правами админа (AdminGate)
 function ProtectedAdmin() {
   const [authUnlocked, setAuthUnlocked] = useState(() => {
-    // Check if already unlocked
     const token = localStorage.getItem('multi_auth_token')
     if (token) {
       try {
@@ -21,12 +23,14 @@ function ProtectedAdmin() {
     return false
   })
 
-  // If unlocked, show admin panel
   if (authUnlocked) {
-    return <Admin />
+    return (
+      <AdminGate>
+        <Admin />
+      </AdminGate>
+    )
   }
 
-  // Show multi-step authentication
   return <MultiStepAuth onSuccess={() => setAuthUnlocked(true)} />
 }
 

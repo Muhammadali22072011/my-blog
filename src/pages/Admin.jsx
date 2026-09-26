@@ -16,6 +16,8 @@ import SEOAnalyzer from '../components/SEOAnalyzer'
 import SEOTools from '../components/SEOTools'
 import SecurityDashboard from '../components/SecurityDashboard'
 import SecurityAuditLog from '../components/SecurityAuditLog'
+import AdminVideos from '../components/admin/AdminVideos'
+import { cleanHandle } from '../utils/videoFormat'
 
 
 // ============================================================================
@@ -71,7 +73,9 @@ function Admin() {
     allow_comments: true,
     moderate_comments: true,
     meta_keywords: '',
-    google_analytics: ''
+    google_analytics: '',
+    instagram_username: '',
+    telegram_username: ''
   })
 
   // Search and Filtering State
@@ -198,10 +202,13 @@ function Admin() {
       ...prev,
       site_name: siteSettings?.site_name || '',
       site_description: siteSettings?.site_description || '',
-      allow_comments: siteSettings?.allow_comments || true,
-      moderate_comments: siteSettings?.moderate_comments || true,
+      // ?? а не || — иначе сохранённое false снова превращалось в true
+      allow_comments: siteSettings?.allow_comments ?? true,
+      moderate_comments: siteSettings?.moderate_comments ?? true,
       meta_keywords: siteSettings?.meta_keywords || '',
-      google_analytics: siteSettings?.google_analytics || ''
+      google_analytics: siteSettings?.google_analytics || '',
+      instagram_username: siteSettings?.instagram_username || '',
+      telegram_username: siteSettings?.telegram_username || ''
     }))
   }, [siteSettings])
 
@@ -471,6 +478,8 @@ function Admin() {
 
   const handleSettingsSubmit = async (e) => {
     e.preventDefault()
+    // Неверный ник не сохраняем молча как null — ошибка уже видна под полем
+    if (instagramHandleInvalid || telegramHandleInvalid) return
     setIsSaving(true)
 
     try {
@@ -481,7 +490,10 @@ function Admin() {
         allow_comments: settingsData.allow_comments,
         moderate_comments: settingsData.moderate_comments,
         meta_keywords: settingsData.meta_keywords,
-        google_analytics: settingsData.google_analytics
+        google_analytics: settingsData.google_analytics,
+        // Ник без @ и без ссылки; пусто → null, кнопка под видео скрывается
+        instagram_username: cleanHandle(settingsData.instagram_username),
+        telegram_username: cleanHandle(settingsData.telegram_username)
       }
 
       await updateSiteSettings(settingsDataForSupabase)
@@ -571,6 +583,10 @@ function Admin() {
       }
     }
   }
+
+  // Поле заполнено, но ник из него не получается
+  const instagramHandleInvalid = Boolean(settingsData.instagram_username?.trim()) && !cleanHandle(settingsData.instagram_username)
+  const telegramHandleInvalid = Boolean(settingsData.telegram_username?.trim()) && !cleanHandle(settingsData.telegram_username)
 
   const handleSettingsChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -854,6 +870,15 @@ function Admin() {
           📝 {t.blog}
         </button>
         <button
+          onClick={() => setActiveTab('videos')}
+          className={`flex-1 py-3 px-4 rounded-md font-medium transition-all duration-200 ${activeTab === 'videos'
+            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm transform scale-105'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+        >
+          🎬 Видео
+        </button>
+        <button
           onClick={() => setActiveTab('projects')}
           className={`flex-1 py-3 px-4 rounded-md font-medium transition-all duration-200 ${activeTab === 'projects'
             ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm transform scale-105'
@@ -918,6 +943,13 @@ function Admin() {
         </button>
 
       </div>
+
+      {/* Videos Tab */}
+      {activeTab === 'videos' && (
+        <div className="border border-ink/15 -mx-4 sm:mx-0">
+          <AdminVideos />
+        </div>
+      )}
 
       {/* Posts Tab */}
       {activeTab === 'posts' && (
@@ -1589,6 +1621,43 @@ function Admin() {
                     className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Кнопки заказа под видео */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-1">Заказы</h3>
+              <p className="text-sm text-ink-soft mb-4">Кнопки под видео: Direct'ga yozish и Telegram. Ник без @.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[
+                  ['instagram_username', 'Instagram для заказов', instagramHandleInvalid, 'ai.movieuz'],
+                  ['telegram_username', 'Telegram для заказов', telegramHandleInvalid, 'username']
+                ].map(([name, label, invalid, placeholder]) => (
+                  <div key={name}>
+                    <label htmlFor={`settings-${name}`} className="label mb-1.5 block">
+                      {label}
+                    </label>
+                    <div className="flex items-stretch">
+                      <span className="flex items-center border border-r-0 border-ink/25 bg-paper-deep px-3 font-mono text-ink-soft">@</span>
+                      <input
+                        id={`settings-${name}`}
+                        type="text"
+                        name={name}
+                        value={settingsData[name]}
+                        onChange={handleSettingsChange}
+                        placeholder={placeholder}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        aria-invalid={invalid}
+                        className={`w-full border bg-paper px-3 py-2.5 text-base text-ink focus:border-tile focus:outline-none ${invalid ? 'border-terra' : 'border-ink/25'}`}
+                      />
+                    </div>
+                    {invalid && (
+                      <p className="mt-1 text-sm text-terra">Ник — латиница, цифры, точка и _ (можно вставить ссылку на профиль)</p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 

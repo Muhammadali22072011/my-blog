@@ -8,6 +8,8 @@
 // Файл лежит в папке с подчёркиванием, поэтому Vercel не делает из него
 // отдельную функцию.
 
+import { videoTools } from './videoTools.js'
+
 const SITE_URL = () => (process.env.SITE_URL || 'https://izzatullaev.uz').replace(/\/$/, '')
 
 const POST_FIELDS = [
@@ -25,7 +27,7 @@ const ABOUT_FIELDS = [
 ]
 const SETTINGS_FIELDS = [
   'site_name', 'site_description', 'allow_comments', 'moderate_comments',
-  'meta_keywords', 'google_analytics',
+  'meta_keywords', 'google_analytics', 'instagram_username', 'telegram_username',
 ]
 const PROJECT_FIELDS = [
   'title', 'description', 'image_url', 'github_url', 'demo_url', 'tags',
@@ -381,6 +383,8 @@ const profileTools = [
   ...singleRowTools('site_settings', SETTINGS_FIELDS, 'site_settings', {
     site_name: str, site_description: str, allow_comments: { type: 'boolean' },
     moderate_comments: { type: 'boolean' }, meta_keywords: str, google_analytics: str,
+    instagram_username: { type: 'string', description: 'Ник Instagram для кнопки «Direct\'ga yozish» под видео, без @' },
+    telegram_username: { type: 'string', description: 'Ник Telegram для кнопки заказа под видео, без @' },
   }),
 ]
 
@@ -495,7 +499,7 @@ const mediaTools = [
         bucket,
         path,
         size: bytes.byteLength,
-        markdown: kind === 'image' ? `![${alt}](${publicUrl})` : `![video](${publicUrl})`,
+        markdown: kind === 'image' ? `![${alt}](${publicUrl})` : `[🎥 Video: ${alt || 'Видео'}](${publicUrl})`,
       }
     },
   },
@@ -602,4 +606,5 @@ export const TOOLS = [
   ...projectTools,
   ...mediaTools,
   ...audienceTools,
+  ...videoTools,
 ]
