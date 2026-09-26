@@ -1,5 +1,9 @@
 // Тестовый скрипт для проверки отправки email через Resend
-const RESEND_API_KEY = 're_FrKiarb5_JcEn936WA2ZMPjtLBdTmdamL';
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+if (!RESEND_API_KEY) {
+  console.error('Задайте RESEND_API_KEY: RESEND_API_KEY=re_... node test-resend-email.js');
+  process.exit(1);
+}
 const BLOG_NAME = 'Muhammadali Izzatullaev Blog';
 const BLOG_URL = 'http://localhost:5173';
 

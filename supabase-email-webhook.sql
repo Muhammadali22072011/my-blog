@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA extensions;
 CREATE OR REPLACE FUNCTION send_welcome_email()
 RETURNS TRIGGER AS $$
 DECLARE
-  resend_api_key TEXT := 're_FrKiarb5_JcEn936WA2ZMPjtLBdTmdamL'; -- Ваш Resend API ключ
+  resend_api_key TEXT := 'ВСТАВЬТЕ_КЛЮЧ_RESEND'; -- Ваш Resend API ключ
   response extensions.http_response;
 BEGIN
   -- Отправляем HTTP POST запрос к Resend API

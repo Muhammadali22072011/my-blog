@@ -81,15 +81,16 @@ export const logSecurityEvent = async (eventType, additionalData = {}) => {
 
     console.log('📊 Logging security event:', eventType, logData)
     
-    const { data, error } = await supabase
+    // Без .select(): читать журнал может только админ, и запрос
+    // «вставь и верни строку» у посетителя отклонялся бы целиком
+    const { error } = await supabase
       .from('security_audit_log')
       .insert([logData])
-      .select()
 
     if (error) {
       console.error('❌ Error logging security event:', error)
     } else {
-      console.log('✅ Security event logged successfully:', data)
+      console.log('✅ Security event logged')
     }
   } catch (error) {
     console.error('Error in logSecurityEvent:', error)

@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
@@ -22,8 +22,8 @@ const News = lazy(() => import('./pages/News'))
 const AboutMe = lazy(() => import('./pages/AboutMe'))
 const Projects = lazy(() => import('./pages/Projects'))
 const MediaManager = lazy(() => import('./pages/MediaManager'))
-const Login = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
+const Videos = lazy(() => import('./pages/Videos'))
+const VideoPage = lazy(() => import('./pages/VideoPage'))
 const ProtectedAdmin = lazy(() => import('./components/ProtectedAdmin'))
 
 /** Заглушка на время подгрузки чанка маршрута */
@@ -68,13 +68,14 @@ function AppContent() {
           <Route path="about" element={<AboutMe />} />
           <Route path="projects" element={<Projects />} />
           <Route path="media" element={<MediaManager />} />
+          <Route path="videos" element={<Videos />} />
+          <Route path="videos/:slug" element={<VideoPage />} />
           <Route path="admin" element={<ProtectedAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        {/* Полноэкранные страницы — без общего каркаса */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* Вход теперь внутри /admin; регистрация закрыта — старые ссылки ведут туда */}
+        <Route path="/login" element={<Navigate to="/admin" replace />} />
       </Routes>
     </Suspense>
   )

@@ -14,6 +14,16 @@
 //     preview-сборках Vercel. Теперь берётся из заголовков запроса.
 //  4. Отсутствие переменных окружения отдавало 500 — превью ломалось
 //     полностью. Теперь функция отдаёт карточку сайта по умолчанию.
+//  5. Запрос поста перечислял колонку og_image, которой в рабочей базе нет.
+//     PostgREST отвечал 400, и КАЖДАЯ ссылка на пост получала карточку
+//     сайта вместо своей. Теперь select=*.
+//
+// Видео: /videos/:slug переписывается сюда же (?videoSlug=). Для них
+// отдаются og:video, обложка с настоящими размерами и VideoObject в
+// JSON-LD. Googlebot тоже попадает под правило «бот», поэтому разметка
+// для поиска живёт здесь, а не только в клиентском коде страницы.
+
+import { buildVideoJsonLd, jsonForScript, SLUG_RE } from '../src/utils/videoFormat.js'
 
 /*
  * Переменные читаются ВНУТРИ обработчика, а не на уровне модуля.
@@ -103,11 +113,35 @@ function getImageUrl(post, supabaseUrl) {
   return `${root}/images/blog-images/${clean}`
 }
 
-function renderPage({ title, description, image, url, type }) {
+function renderPage({
+  title,
+  description,
+  image,
+  imageWidth = 1200,
+  imageHeight = 630,
+  url,
+  type,
+  video = null,
+  jsonLd = null,
+  bodyHtml = null,
+}) {
   const t = escapeHtml(title)
   const d = escapeHtml(description)
   const u = escapeHtml(url)
   const img = image ? escapeHtml(image) : null
+
+  const videoMeta = video
+    ? [
+        `  <meta property="og:video" content="${escapeHtml(video.url)}">`,
+        `  <meta property="og:video:secure_url" content="${escapeHtml(video.url)}">`,
+        `  <meta property="og:video:type" content="video/mp4">`,
+        video.width ? `  <meta property="og:video:width" content="${Number(video.width)}">` : '',
+        video.height ? `  <meta property="og:video:height" content="${Number(video.height)}">` : '',
+        video.releaseDate ? `  <meta property="video:release_date" content="${escapeHtml(video.releaseDate)}">` : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : ''
 
   return `<!doctype html>
 <html lang="ru">
@@ -129,11 +163,12 @@ ${
   img
     ? `  <meta property="og:image" content="${img}">
   <meta property="og:image:secure_url" content="${img}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image:width" content="${Number(imageWidth)}">
+  <meta property="og:image:height" content="${Number(imageHeight)}">
   <meta property="og:image:alt" content="${t}">`
     : ''
 }
+${videoMeta}
 
   <meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}">
   <meta name="twitter:url" content="${u}">
@@ -142,14 +177,83 @@ ${
 ${img ? `  <meta name="twitter:image" content="${img}">` : ''}
 
   <link rel="canonical" href="${u}">
+${jsonLd ? `  <script type="application/ld+json">${jsonForScript(jsonLd)}</script>` : ''}
   <meta http-equiv="refresh" content="0;url=${u}">
 </head>
 <body>
   <h1>${t}</h1>
-  <p>${d}</p>
+${bodyHtml || `  <p>${d}</p>`}
   <p><a href="${u}">Открыть материал</a></p>
 </body>
 </html>`
+}
+
+const htmlResponse = (html, { status = 200, cache = 'public, max-age=3600, s-maxage=3600' } = {}) =>
+  new Response(html, {
+    status,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': cache },
+  })
+
+/** Короткое описание видео для карточки: первый абзац, до 160 знаков */
+function videoDescription(video) {
+  const text = String(video.description || '').replace(/\s+/g, ' ').trim()
+  if (!text) return `Видео · ${SITE_NAME}`
+  return text.length <= 160 ? text : `${text.slice(0, 160).trim()}…`
+}
+
+async function renderVideo({ slug, origin, supabaseUrl, supabaseKey, fallback }) {
+  const now = new Date().toISOString()
+  // Правило RLS само отсекает черновики и отложенные; фильтры здесь —
+  // вторая линия защиты на случай иначе настроенной базы
+  const response = await fetch(
+    `${supabaseUrl.replace(/\/+$/, '')}/rest/v1/videos` +
+      `?slug=eq.${encodeURIComponent(slug)}&status=eq.published&published_at=lte.${encodeURIComponent(now)}` +
+      '&select=title,description,poster_url,video_url,width,height,duration_sec,views,tags,published_at,created_at,updated_at',
+    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+  )
+  if (!response.ok) return fallback()
+
+  const rows = await response.json()
+  const video = Array.isArray(rows) ? rows[0] : null
+  if (!video) return fallback(404)
+
+  const pageUrl = `${origin}/videos/${slug}`
+  const description = videoDescription(video)
+  const poster = video.poster_url || `${origin}/og-image.png`
+  const posterIsReal = Boolean(video.poster_url && video.width && video.height)
+
+  const bodyHtml = [
+    video.video_url
+      ? `  <video controls preload="none" playsinline src="${escapeHtml(video.video_url)}"` +
+        ` poster="${escapeHtml(poster)}"` +
+        (video.width ? ` width="${Number(video.width)}" height="${Number(video.height)}"` : '') +
+        '></video>'
+      : '',
+    ...String(video.description || '')
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => `  <p>${escapeHtml(p)}</p>`),
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  return htmlResponse(
+    renderPage({
+      title: video.title,
+      description,
+      image: poster,
+      imageWidth: posterIsReal ? video.width : 1200,
+      imageHeight: posterIsReal ? video.height : 630,
+      url: pageUrl,
+      type: 'video.other',
+      video: video.video_url
+        ? { url: video.video_url, width: video.width, height: video.height, releaseDate: video.published_at }
+        : null,
+      jsonLd: buildVideoJsonLd(video, pageUrl),
+      bodyHtml,
+    })
+  )
 }
 
 export default async function handler(req) {
@@ -157,6 +261,7 @@ export default async function handler(req) {
   const origin = originOf(req)
   const url = new URL(req.url)
   const postId = url.searchParams.get('postId')
+  const videoSlug = url.searchParams.get('videoSlug')
 
   // Запасная карточка: отдаётся вместо ошибки, чтобы ссылка в мессенджере
   // показывала хотя бы описание сайта, а не пустой прямоугольник
@@ -166,7 +271,12 @@ export default async function handler(req) {
         title: SITE_NAME,
         description: SITE_TAGLINE,
         image: `${origin}/og-image.png`,
-        url: postId && /^\d+$/.test(postId) ? `${origin}/post/${postId}` : origin,
+        url:
+          postId && /^\d+$/.test(postId)
+            ? `${origin}/post/${postId}`
+            : videoSlug && SLUG_RE.test(videoSlug)
+              ? `${origin}/videos/${videoSlug}`
+              : origin,
         type: 'website',
       }),
       {
@@ -178,6 +288,19 @@ export default async function handler(req) {
       }
     )
 
+  if (videoSlug !== null) {
+    // Адрес видео — только латиница, цифры и дефисы: в запрос к базе
+    // не должно попасть ничего другого
+    if (!SLUG_RE.test(videoSlug) || videoSlug.length > 100) return fallback(400)
+    if (!supabaseUrl || !supabaseKey) return fallback()
+    try {
+      return await renderVideo({ slug: videoSlug, origin, supabaseUrl, supabaseKey, fallback })
+    } catch (error) {
+      console.error('Ошибка формирования OG-карточки видео:', error)
+      return fallback()
+    }
+  }
+
   // Только целое число: строка вида `1 or 1=1` не должна попадать в запрос
   if (!postId || !/^\d+$/.test(postId)) return fallback(400)
 
@@ -187,7 +310,7 @@ export default async function handler(req) {
   try {
     const response = await fetch(
       `${supabaseUrl.replace(/\/+$/, '')}/rest/v1/posts` +
-        `?id=eq.${postId}&status=eq.published&select=content,featured_image,og_image,created_at,updated_at`,
+        `?id=eq.${postId}&status=eq.published&select=*`,
       {
         headers: {
           apikey: supabaseKey,

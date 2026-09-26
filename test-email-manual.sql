@@ -6,7 +6,7 @@
 
 DO $$
 DECLARE
-  resend_api_key TEXT := 're_FrKiarb5_JcEn936WA2ZMPjtLBdTmdamL';
+  resend_api_key TEXT := 'ВСТАВЬТЕ_КЛЮЧ_RESEND';
   test_email TEXT := 'demoakkaunt00001@gmail.com';
   request_id INTEGER;
   response RECORD;

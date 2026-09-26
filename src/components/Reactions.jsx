@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../config/supabase'
 
 const REACTIONS = [
@@ -10,7 +10,7 @@ const REACTIONS = [
   { emoji: '🚀', name: 'rocket', title: 'Вдохновляет' },
 ]
 
-function Reactions({ postId }) {
+function PostReactions({ postId, prompt }) {
   const [reactions, setReactions] = useState({})
   const [userReaction, setUserReaction] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -114,6 +114,19 @@ function Reactions({ postId }) {
     }
   }
 
+  return (
+    <ReactionsView
+      loading={loading}
+      reactions={reactions}
+      userReaction={userReaction}
+      animating={animating}
+      onReact={handleReaction}
+      prompt={prompt}
+    />
+  )
+}
+
+function ReactionsView({ loading, reactions, userReaction, animating, onReact, prompt }) {
   const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0)
 
   if (loading) {
@@ -129,7 +142,7 @@ function Reactions({ postId }) {
   return (
     <div>
       <p className="label">
-        {totalReactions > 0 ? `Отклики · ${totalReactions}` : 'Как вам материал?'}
+        {totalReactions > 0 ? `Отклики · ${totalReactions}` : prompt}
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2.5">
@@ -138,7 +151,7 @@ function Reactions({ postId }) {
           return (
             <button
               key={name}
-              onClick={() => handleReaction(name)}
+              onClick={() => onReact(name)}
               aria-pressed={active}
               aria-label={title}
               title={title}
@@ -155,6 +168,153 @@ function Reactions({ postId }) {
         })}
       </div>
     </div>
+  )
+}
+
+const USER_ID_RE = /^user_[a-z0-9]{6,32}$/
+let memoryUserId = null
+
+/**
+ * Тот же анонимный id, что и у реакций на посты. Сервер видео проверяет
+ * формат, поэтому старый id неверного вида (редкий случай — короткая
+ * строка из Math.random) заменяется новым. Без localStorage живём с id
+ * в памяти вкладки.
+ */
+function getStableUserId() {
+  try {
+    const saved = localStorage.getItem('user_reaction_id')
+    if (saved && USER_ID_RE.test(saved)) return saved
+    const id = makeUserId()
+    localStorage.setItem('user_reaction_id', id)
+    return id
+  } catch {
+    memoryUserId = memoryUserId || makeUserId()
+    return memoryUserId
+  }
+}
+
+function makeUserId() {
+  const bytes = new Uint32Array(2)
+  crypto.getRandomValues(bytes)
+  return 'user_' + Array.from(bytes, (n) => n.toString(36)).join('').slice(0, 16).padEnd(8, '0')
+}
+
+/** Счётчики с нулями для всех реакций — чтобы кнопки не прыгали */
+const withZeros = (counts) => {
+  const full = {}
+  REACTIONS.forEach((r) => {
+    full[r.name] = Number(counts?.[r.name]) || 0
+  })
+  return full
+}
+
+/**
+ * Реакции через внешний адаптер (видео). Нажатие отражается сразу,
+ * затем счётчики сверяются с ответом сервера; при ошибке — откат.
+ */
+function AdapterReactions({ adapter, prompt }) {
+  const [reactions, setReactions] = useState({})
+  const [userReaction, setUserReaction] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [animating, setAnimating] = useState(null)
+  const aliveRef = useRef(true)
+  const busyRef = useRef(false)
+  const animTimerRef = useRef(null)
+
+  useEffect(() => {
+    aliveRef.current = true
+    return () => {
+      aliveRef.current = false
+      clearTimeout(animTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setFailed(false)
+    adapter
+      .load(getStableUserId())
+      .then(({ counts, mine }) => {
+        if (cancelled) return
+        setReactions(withZeros(counts))
+        setUserReaction(mine || null)
+      })
+      .catch((error) => {
+        console.error('Не удалось загрузить реакции:', error)
+        if (!cancelled) setFailed(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [adapter])
+
+  const handleReaction = async (name) => {
+    // Пока летит прошлый запрос, новые нажатия не принимаем — иначе ответы
+    // могут прийти в обратном порядке и «откатить» свежий выбор
+    if (busyRef.current) return
+    busyRef.current = true
+
+    const prevCounts = reactions
+    const prevMine = userReaction
+    const next = prevMine === name ? null : name
+
+    const optimistic = { ...prevCounts }
+    if (prevMine) optimistic[prevMine] = Math.max(0, (optimistic[prevMine] || 0) - 1)
+    if (next) optimistic[next] = (optimistic[next] || 0) + 1
+    setReactions(optimistic)
+    setUserReaction(next)
+    setAnimating(name)
+
+    try {
+      const { counts, mine } = await adapter.set(getStableUserId(), next)
+      if (!aliveRef.current) return
+      setReactions(withZeros(counts))
+      setUserReaction(mine || null)
+    } catch (error) {
+      console.error('Не удалось сохранить реакцию:', error)
+      if (!aliveRef.current) return
+      setReactions(prevCounts)
+      setUserReaction(prevMine)
+    } finally {
+      busyRef.current = false
+      clearTimeout(animTimerRef.current)
+      animTimerRef.current = setTimeout(() => {
+        if (aliveRef.current) setAnimating(null)
+      }, 300)
+    }
+  }
+
+  // Сервер недоступен — лучше ничего, чем ряд кнопок, которые не работают
+  if (failed) return null
+
+  return (
+    <ReactionsView
+      loading={loading}
+      reactions={reactions}
+      userReaction={userReaction}
+      animating={animating}
+      onReact={handleReaction}
+      prompt={prompt}
+    />
+  )
+}
+
+/**
+ * Без adapter — прежнее поведение для постов (таблица reactions).
+ * С adapter = { load(userId), set(userId, reaction|null) } → { counts, mine }
+ * компонент работает с любым источником, например с видео.
+ * Адаптер должен быть стабильным (useMemo), иначе реакции перечитаются.
+ */
+function Reactions({ postId, adapter, prompt = 'Как вам материал?' }) {
+  return adapter ? (
+    <AdapterReactions adapter={adapter} prompt={prompt} />
+  ) : (
+    <PostReactions postId={postId} prompt={prompt} />
   )
 }
 

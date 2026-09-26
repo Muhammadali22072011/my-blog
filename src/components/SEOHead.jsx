@@ -39,9 +39,17 @@ function SEOHead({
   publishedTime,
   modifiedTime,
   tags,
+  imageWidth = '1200',
+  imageHeight = '630',
+  video,
 }) {
   // Примитив вместо массива — стабильная зависимость эффекта
   const tagsKey = Array.isArray(tags) ? tags.filter(Boolean).join(',') : ''
+  // Объект video раскладываем на примитивы по той же причине
+  const videoUrl = video?.url || ''
+  const videoType = video?.type || ''
+  const videoWidth = video?.width ? String(video.width) : ''
+  const videoHeight = video?.height ? String(video.height) : ''
 
   useEffect(() => {
     const tagList = tagsKey ? tagsKey.split(',') : []
@@ -80,8 +88,8 @@ function SEOHead({
     if (imageUrl) {
       setMeta('og:image', imageUrl, true)
       setMeta('og:image:secure_url', imageUrl, true)
-      setMeta('og:image:width', '1200', true)
-      setMeta('og:image:height', '630', true)
+      setMeta('og:image:width', String(imageWidth), true)
+      setMeta('og:image:height', String(imageHeight), true)
       setMeta('og:image:alt', title, true)
     }
 
@@ -100,6 +108,19 @@ function SEOHead({
       tagList.forEach((tag, i) => setMeta(`article:tag:${i}`, tag, true))
     }
 
+    if (videoUrl) {
+      const absVideo = absoluteUrl(videoUrl)
+      setMeta('og:video', absVideo, true)
+      setMeta('og:video:secure_url', absVideo, true)
+      setMeta('og:video:type', videoType, true)
+      setMeta('og:video:width', videoWidth, true)
+      setMeta('og:video:height', videoHeight, true)
+    }
+
+    if (type === 'video.other' && publishedTime) {
+      setMeta('video:release_date', publishedTime, true)
+    }
+
     let canonical = document.head.querySelector('link[rel="canonical"]')
     if (!canonical) {
       canonical = document.createElement('link')
@@ -113,7 +134,23 @@ function SEOHead({
       // Снимаем только то, что добавили сами: базовые теги из index.html остаются
       for (const node of createdNodes) node.remove()
     }
-  }, [title, description, image, url, type, author, publishedTime, modifiedTime, tagsKey])
+  }, [
+    title,
+    description,
+    image,
+    url,
+    type,
+    author,
+    publishedTime,
+    modifiedTime,
+    tagsKey,
+    imageWidth,
+    imageHeight,
+    videoUrl,
+    videoType,
+    videoWidth,
+    videoHeight,
+  ])
 
   return null
 }

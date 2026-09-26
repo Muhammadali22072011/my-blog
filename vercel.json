@@ -10,9 +10,28 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(bot|crawler|spider|crawling|facebookexternalhit|twitterbot|whatsapp|telegram).*"
+          "value": ".*([Bb]ot|[Cc]rawler|[Ss]pider|[Cc]rawling|facebookexternalhit|WhatsApp/|vkShare).*"
         }
       ]
+    },
+    {
+      "source": "/videos/:slug",
+      "destination": "/api/og?videoSlug=:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Bb]ot|[Cc]rawler|[Ss]pider|[Cc]rawling|facebookexternalhit|WhatsApp/|vkShare).*"
+        }
+      ]
+    },
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
     },
     {
       "source": "/(.*)",

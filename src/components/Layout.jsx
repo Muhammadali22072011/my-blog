@@ -24,6 +24,7 @@ function Layout() {
 
   const nav = [
     { to: '/blogs', label: 'Журнал' },
+    { to: '/videos', label: 'Видео' },
     { to: '/feed', label: 'Лента' },
     { to: '/news', label: 'Новости' },
     { to: '/projects', label: 'Проекты' },
