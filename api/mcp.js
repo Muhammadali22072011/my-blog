@@ -5,8 +5,8 @@
 // не нужны — инструменты короткие и ничего не шлют по своей инициативе.
 //
 // Доступ — по секретному ключу MCP_TOKEN: в заголовке
-// `Authorization: Bearer <ключ>` или в адресе `?key=<ключ>` (второй
-// вариант нужен для коннекторов claude.ai, где заголовок задать нельзя).
+// `Authorization: Bearer <ключ>` или в адресе: /mcp/<ключ> (для коннекторов
+// claude.ai, где заголовок задать нельзя) либо /mcp?key=<ключ>.
 // Без ключа сервер не отвечает вообще: он работает с service-role ключом
 // Supabase, то есть мимо RLS, и может удалять посты.
 //
@@ -40,11 +40,18 @@ const safeEqual = (a, b) => {
   return x.length === y.length && timingSafeEqual(x, y)
 }
 
+// Ключ принимается тремя способами:
+//   /mcp/<ключ>             — основной для claude.ai: коннектор может
+//                             отбрасывать ?query из адреса, и тогда сервер
+//                             отвечал 401, а коннектор уходил искать OAuth
+//   /mcp?key=<ключ>         — прежний вариант, оставлен для совместимости
+//   Authorization: Bearer   — для Claude Code и скриптов
 const readToken = (req) => {
   const header = req.headers.authorization || ''
   if (header.toLowerCase().startsWith('bearer ')) return header.slice(7).trim()
   const url = new URL(req.url, 'http://localhost')
-  return url.searchParams.get('key') || ''
+  const fromPath = /^\/(?:api\/)?mcp\/([A-Za-z0-9_-]+)\/?$/.exec(url.pathname)?.[1]
+  return fromPath || url.searchParams.get('key') || req.query?.key || ''
 }
 
 const rpcError = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } })

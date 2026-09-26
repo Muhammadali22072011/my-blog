@@ -30,6 +30,10 @@
       "destination": "/api/mcp"
     },
     {
+      "source": "/mcp/:key",
+      "destination": "/api/mcp?key=:key"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
